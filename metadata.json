@@ -1,0 +1,6 @@
+{
+  "name": "Choir Management System",
+  "description": "Full-stack Choir Management System for St. Michael's Church Koralawella with committee access, chorister database, weekly masses, feast novenas, hymn schedules, and automatic birthday celebration flyer compositing with face-aligned portrait framing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
