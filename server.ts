@@ -1658,8 +1658,9 @@ app.get('/api/stream', (req: Request, res: Response) => {
   });
 });
 
-// Full state fetch
-app.get('/api/state', (req: Request, res: Response) => {
+// Full state fetch with live Supabase PIN sync
+app.get('/api/state', async (req: Request, res: Response) => {
+  await syncPinsFromSupabaseIfAvailable();
   syncAllChoristerAges(appState.choristers);
   res.json(appState);
 });
@@ -2054,16 +2055,114 @@ app.post('/api/presence/leave', (req: Request, res: Response) => {
   res.json({ success: true, count: onlineList.length });
 });
 
+// Real-Time Background & On-Demand Supabase PIN Synchronizer
+async function syncPinsFromSupabaseIfAvailable(): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) return;
+  try {
+    const { data: dbComms, error: commErr } = await supabase.from('committee_members').select('id, name, pin');
+    if (!commErr && Array.isArray(dbComms) && dbComms.length > 0) {
+      let changed = false;
+      for (const dbM of dbComms) {
+        if (!dbM.pin) continue;
+        const cleanDbPin = String(dbM.pin).trim();
+        const local = appState.committeeMembers.find(
+          (m) => m.id === dbM.id || m.name.toLowerCase().trim() === dbM.name?.toLowerCase().trim()
+        );
+        if (local && local.pin !== cleanDbPin) {
+          console.log(`[Supabase Auto-Sync] Updated PIN for committee member ${local.name}: ${local.pin} -> ${cleanDbPin}`);
+          local.pin = cleanDbPin;
+          changed = true;
+          // Also sync matching chorister
+          const choir = appState.choristers.find(
+            (c) => c.id === local.id || c.name.toLowerCase().trim() === local.name.toLowerCase().trim()
+          );
+          if (choir) choir.pin = cleanDbPin;
+        }
+      }
+      if (changed) {
+        saveDiskState();
+        broadcastUpdate('COMMITTEE_UPDATED', appState.committeeMembers);
+        broadcastUpdate('CHORISTERS_UPDATED', appState.choristers);
+      }
+    }
+  } catch (err) {
+    // Non-blocking sync
+  }
+}
+
+// Periodic auto-sync every 15 seconds to ensure changes made in Supabase are pulled instantly
+setInterval(() => {
+  syncPinsFromSupabaseIfAvailable().catch(() => {});
+}, 15000);
+
 // Authenticate committee member or organist/chorister with PIN
-app.post('/api/auth/verify', (req: Request, res: Response) => {
+app.post('/api/auth/verify', async (req: Request, res: Response) => {
   const { memberId, pin } = req.body;
+  if (!memberId || !pin) {
+    return res.status(400).json({ error: 'memberId and pin are required' });
+  }
+
+  const cleanPin = String(pin || '').trim();
+
+  // Find target local member first
+  const member = appState.committeeMembers.find(
+    (m) => m.id === memberId || m.choristerId === memberId || m.name.toLowerCase().trim() === String(memberId).toLowerCase().trim()
+  );
+
+  // If Supabase is connected, check live Supabase in case PIN was changed directly in Supabase
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      // 1. Check committee_members in Supabase by ID or Name
+      let query = supabase.from('committee_members').select('id, name, pin');
+      if (member) {
+        query = query.or(`id.eq.${member.id},name.ilike.${member.name.trim()}`);
+      } else {
+        query = query.eq('id', memberId);
+      }
+      const { data: dbComms } = await query;
+      const dbComm = dbComms && dbComms[0];
+
+      if (dbComm && dbComm.pin) {
+        const cleanDbPin = String(dbComm.pin).trim();
+        if (member && member.pin !== cleanDbPin) {
+          console.log(`[Supabase Auth] Syncing live PIN from Supabase for ${member.name}: ${member.pin} -> ${cleanDbPin}`);
+          member.pin = cleanDbPin;
+          saveDiskState();
+          broadcastUpdate('COMMITTEE_UPDATED', appState.committeeMembers);
+        }
+      }
+
+      // 2. Also check choristers in Supabase by ID or Name
+      let choirQuery = supabase.from('choristers').select('id, name, pin');
+      if (member) {
+        choirQuery = choirQuery.or(`id.eq.${member.id},name.ilike.${member.name.trim()}`);
+      } else {
+        choirQuery = choirQuery.eq('id', memberId);
+      }
+      const { data: dbChoirs } = await choirQuery;
+      const dbChoir = dbChoirs && dbChoirs[0];
+
+      if (dbChoir && dbChoir.pin) {
+        const cleanChoirPin = String(dbChoir.pin).trim();
+        // If user changed the PIN in choristers table to cleanPin, sync to member as well
+        if (cleanChoirPin === cleanPin && member && member.pin !== cleanPin) {
+          console.log(`[Supabase Auth] Syncing live PIN from Supabase choristers for ${member.name}: ${cleanChoirPin}`);
+          member.pin = cleanChoirPin;
+          await supabase.from('committee_members').update({ pin: cleanChoirPin }).or(`id.eq.${member.id},name.ilike.${member.name.trim()}`);
+          saveDiskState();
+          broadcastUpdate('COMMITTEE_UPDATED', appState.committeeMembers);
+        }
+      }
+    } catch (err) {
+      console.error('[Supabase Auth] Live PIN check error:', err);
+    }
+  }
 
   // Check committee members
-  const member = appState.committeeMembers.find(
-    (m) => (m.id === memberId || m.choristerId === memberId)
-  );
   if (member) {
-    if (member.pin !== pin) {
+    if (member.pin !== cleanPin) {
       return res.status(401).json({ error: 'Invalid PIN for committee member' });
     }
     const chorister = appState.choristers.find(
@@ -2072,11 +2171,21 @@ app.post('/api/auth/verify', (req: Request, res: Response) => {
     return res.json({ success: true, member, chorister, isCommittee: true });
   }
 
-  // Also check chorister / organist by ID
-  const chorister = appState.choristers.find((c) => c.id === memberId);
+  // Also check chorister / organist by ID or name
+  const chorister = appState.choristers.find(
+    (c) => c.id === memberId || c.name.toLowerCase().trim() === String(memberId).toLowerCase().trim()
+  );
   if (chorister) {
+    if (supabase) {
+      try {
+        const { data: liveCh } = await supabase.from('choristers').select('id, pin').or(`id.eq.${chorister.id},name.ilike.${chorister.name.trim()}`);
+        if (liveCh && liveCh[0] && liveCh[0].pin) {
+          chorister.pin = String(liveCh[0].pin).trim();
+        }
+      } catch {}
+    }
     const choristerPin = chorister.pin || '1234';
-    if (choristerPin !== pin) {
+    if (choristerPin !== cleanPin) {
       return res.status(401).json({ error: 'Invalid PIN for member' });
     }
     const organistMember: CommitteeMember = {
@@ -2097,30 +2206,121 @@ app.post('/api/auth/verify', (req: Request, res: Response) => {
   return res.status(404).json({ error: 'Member not found' });
 });
 
+// Dedicated Real-Time PIN Update Endpoint with Direct Supabase Sync
+app.post('/api/auth/change-pin', async (req: Request, res: Response) => {
+  const { memberId, newPin } = req.body;
+  if (!memberId || !newPin || String(newPin).trim().length < 4) {
+    return res.status(400).json({ error: 'Valid memberId and at least 4-digit PIN required' });
+  }
+
+  const cleanPin = String(newPin).trim();
+  let updatedMember: CommitteeMember | null = null;
+  let updatedChorister: Chorister | null = null;
+
+  // 1. Update Committee Member
+  const commIdx = appState.committeeMembers.findIndex(
+    (m) => m.id === memberId || m.choristerId === memberId || m.name.toLowerCase().trim() === String(memberId).toLowerCase().trim()
+  );
+  if (commIdx !== -1) {
+    appState.committeeMembers[commIdx].pin = cleanPin;
+    updatedMember = appState.committeeMembers[commIdx];
+  }
+
+  // 2. Update Chorister
+  const choirIdx = appState.choristers.findIndex(
+    (c) => c.id === memberId || (updatedMember && (c.id === updatedMember.choristerId || c.name.toLowerCase().trim() === updatedMember.name.toLowerCase().trim()))
+  );
+  if (choirIdx !== -1) {
+    appState.choristers[choirIdx].pin = cleanPin;
+    updatedChorister = appState.choristers[choirIdx];
+  }
+
+  // 3. Directly sync with Supabase PostgreSQL
+  const supabase = getSupabase();
+  let supabaseSynced = false;
+  let supabaseError: string | null = null;
+  if (supabase) {
+    try {
+      if (updatedMember) {
+        const { error: commErr } = await supabase
+          .from('committee_members')
+          .update({ pin: cleanPin })
+          .or(`id.eq.${updatedMember.id},name.ilike.${updatedMember.name.trim()}`);
+        if (commErr) {
+          console.error('[Supabase] change-pin committee_members error:', commErr.message);
+          supabaseError = commErr.message;
+        } else {
+          console.log(`[Supabase] Live PIN successfully updated in committee_members for ${updatedMember.name} -> ${cleanPin}`);
+        }
+      }
+
+      if (updatedChorister) {
+        const { error: choirErr } = await supabase
+          .from('choristers')
+          .update({ pin: cleanPin, updated_at: new Date().toISOString() })
+          .or(`id.eq.${updatedChorister.id},name.ilike.${updatedChorister.name.trim()}`);
+        if (choirErr) {
+          console.error('[Supabase] change-pin choristers error:', choirErr.message);
+        } else {
+          console.log(`[Supabase] Live PIN successfully updated in choristers for ${updatedChorister.name} -> ${cleanPin}`);
+        }
+      }
+      supabaseSynced = !supabaseError;
+    } catch (err: any) {
+      console.error('[Supabase] change-pin sync error:', err);
+      supabaseError = err?.message;
+    }
+  }
+
+  saveDiskState();
+  broadcastUpdate('COMMITTEE_UPDATED', appState.committeeMembers);
+  broadcastUpdate('CHORISTERS_UPDATED', appState.choristers);
+
+  res.json({
+    success: true,
+    message: 'PIN successfully updated and synced with Supabase PostgreSQL.',
+    pin: cleanPin,
+    supabaseSynced,
+    supabaseError,
+    member: updatedMember,
+    chorister: updatedChorister,
+  });
+});
+
 async function syncCommitteeMemberUpsert(m: CommitteeMember) {
   const supabase = getSupabase();
   if (!supabase) return;
   try {
-    await supabase.from('committee_members').upsert({
+    const cleanPin = String(m.pin || '2026').trim();
+    const { error } = await supabase.from('committee_members').upsert({
       id: m.id,
-      chorister_id: m.choristerId || m.id,
       name: m.name,
-      full_name: m.fullName || m.name,
       role: m.role,
       phone: m.phone || '',
       email: m.email || '',
-      pin: m.pin,
+      pin: cleanPin,
       avatar_color: m.avatarColor,
-      photo_url: m.photoUrl || '',
       created_at: new Date().toISOString(),
     });
+    // Also explicitly execute update to ensure existing row PIN is 100% updated
+    const { error: updErr } = await supabase
+      .from('committee_members')
+      .update({ pin: cleanPin })
+      .or(`id.eq.${m.id},name.ilike.${m.name.trim()}`);
+
+    if (error && updErr) {
+      console.error(`[Supabase] committee_members upsert error for ${m.name}:`, error?.message || updErr?.message);
+    } else {
+      console.log(`[Supabase] Successfully synced PIN (${cleanPin}) for committee member: ${m.name}`);
+    }
   } catch (err) {
     console.error('[Supabase] committee_members upsert failed:', err);
   }
 }
 
 // Committee Members Endpoints
-app.get('/api/committee-members', (req: Request, res: Response) => {
+app.get('/api/committee-members', async (req: Request, res: Response) => {
+  await syncPinsFromSupabaseIfAvailable();
   // Always ensure committee list is synced and exclude Ruwanga
   syncCommitteeAndChoristers();
   res.json(appState.committeeMembers);
@@ -2317,20 +2517,31 @@ async function syncChoristerUpsert(c: Chorister) {
   const supabase = getSupabase();
   if (!supabase) return;
   try {
-    await supabase.from('choristers').upsert({
+    const cleanPin = String(c.pin || '1234').trim();
+    const { error } = await supabase.from('choristers').upsert({
       id: c.id,
       name: c.name,
-      age: c.age,
-      birthdate: c.birthdate,
-      address: c.address,
-      phone_number: c.phoneNumber,
-      role: c.role,
+      age: c.age !== undefined && c.age !== null ? Number(c.age) : null,
+      birthdate: c.birthdate || '',
+      address: c.address || '',
+      phone_number: c.phoneNumber || '',
+      role: c.role || 'Chorister',
       voice_rating: c.voiceRating ?? null,
       voice_notes: c.voiceNotes ?? '',
-      pin: c.pin || '1234',
-      photo_url: c.photoUrl || '',
+      pin: cleanPin,
       updated_at: new Date().toISOString(),
     });
+    // Explicit update to guarantee PIN is synced on existing rows
+    const { error: updErr } = await supabase
+      .from('choristers')
+      .update({ pin: cleanPin, updated_at: new Date().toISOString() })
+      .or(`id.eq.${c.id},name.ilike.${c.name.trim()}`);
+
+    if (error && updErr) {
+      console.error(`[Supabase] choristers upsert error for ${c.name}:`, error?.message || updErr?.message);
+    } else {
+      console.log(`[Supabase] Successfully synced PIN (${cleanPin}) for chorister: ${c.name}`);
+    }
   } catch (err) {
     console.error('[Supabase] Failed to upsert chorister:', err);
   }

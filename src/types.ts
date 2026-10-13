@@ -293,7 +293,7 @@ export interface FeastHighMassSchedule {
 }
 
 export interface MajorEvent {
-  id: 'feast' | 'carols' | 'easter' | 'christmas-new-year';
+  id: 'feast' | 'carols' | 'easter' | 'christmas' | 'new-year' | 'christmas-new-year';
   title: string;
   subtitle: string;
   description?: string;
@@ -304,6 +304,12 @@ export interface MajorEvent {
   feastMasses?: FeastMassesSchedule;
   highMass?: FeastHighMassSchedule;
   workAndBudget: WorkAndBudget;
+  midnightAlleluia?: string;
+  midnightResponse?: string;
+  morningAlleluia?: string;
+  morningResponse?: string;
+  carolsSession1?: Array<{ lessonNumber: number; title: string; lyrics: string }>;
+  carolsSession2?: Array<{ id: string; title: string; lyrics: string }>;
 }
 
 export interface CustomYearPlanEvent {
@@ -329,8 +335,9 @@ export interface AnnualCalendarConfig {
   feastDate: string;
   carolsDate: string;
   easterDate: string;
-  christmasNewYearDate: string;
-  newYearDate?: string;
+  christmasDate?: string;
+  newYearDate: string;
+  christmasNewYearDate?: string; // legacy fallback
   // Background Google Drive links for the core unchanging events
   feastBackgroundUrl?: string;
   carolsBackgroundUrl?: string;

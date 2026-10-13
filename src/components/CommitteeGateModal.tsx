@@ -34,24 +34,51 @@ export const CommitteeGateModal: React.FC<CommitteeGateModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSwitch = (e: React.FormEvent) => {
+  const handleSwitch = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetMember = committeeMembers.find((m) => m.id === selectedId);
     if (!targetMember) return;
 
-    if (pinInput.trim() !== targetMember.pin) {
-      setErrorMsg('Incorrect PIN. Please try again.');
-      return;
+    const cleanInput = pinInput.trim();
+    try {
+      const res = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: targetMember.id, pin: cleanInput }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const authedMember: CommitteeMember = data.member || targetMember;
+        setErrorMsg('');
+        setSuccessMsg(`Authenticated as ${authedMember.name} (${authedMember.role})`);
+        setTimeout(() => {
+          onSelectMember(authedMember);
+          setSuccessMsg('');
+          setPinInput('');
+          onClose();
+        }, 400);
+        return;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setErrorMsg(errData.error || 'Incorrect PIN. Please try again.');
+        return;
+      }
+    } catch {
+      // Offline fallback only if server unreachable
+      if (cleanInput === targetMember.pin) {
+        setErrorMsg('');
+        setSuccessMsg(`Authenticated as ${targetMember.name} (${targetMember.role})`);
+        setTimeout(() => {
+          onSelectMember(targetMember);
+          setSuccessMsg('');
+          setPinInput('');
+          onClose();
+        }, 400);
+        return;
+      }
     }
 
-    setErrorMsg('');
-    setSuccessMsg(`Authenticated as ${targetMember.name} (${targetMember.role})`);
-    setTimeout(() => {
-      onSelectMember(targetMember);
-      setSuccessMsg('');
-      setPinInput('');
-      onClose();
-    }, 400);
+    setErrorMsg('Incorrect PIN. Please try again.');
   };
 
   const handleSelect = (member: CommitteeMember) => {

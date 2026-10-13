@@ -373,84 +373,19 @@ export const WorkSubTab: React.FC<WorkSubTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Workflow status and President signoff banner (Hidden for weekly masses as requested) */}
-      {!hideApproval ? (
-        <div className="bg-[#121212] text-white rounded-2xl p-4 sm:p-5 border border-[#222222] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm tracking-tight text-white">
-                  President-Led Liturgical Workflow
-                </h3>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                  workAndBudget.workflowStatus === 'President Approved' || workAndBudget.workflowStatus === 'Published'
-                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                    : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                }`}>
-                  {workAndBudget.workflowStatus || 'Draft'}
-                </span>
-              </div>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                Hymn choices and task assignments must be authorized for official liturgical execution.
-                {workAndBudget.lastUpdatedBy && (
-                  <span className="text-neutral-300 ml-1">
-                    • Last reviewed by {workAndBudget.lastUpdatedBy}
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 self-end md:self-auto">
-            {/* Hymn sheet is ONLY for Christmas and New year, Carols, Feast, and Easter */}
-            {showHymnSheet && (
-              <button
-                id="open-hymn-sheet-modal-btn"
-                onClick={() => setIsHymnSheetModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 transition-colors border border-amber-500/30"
-                title="View & Print Official Choral Hymn Sheet"
-              >
-                <FileText className="w-3.5 h-3.5 text-amber-400" />
-                <span>Hymn Sheet</span>
-              </button>
-            )}
-
-            {activeMember.role === 'President' ? (
-              <button
-                id="president-signoff-work-btn"
-                onClick={handlePresidentApprove}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  workAndBudget.workflowStatus === 'President Approved'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-amber-500 hover:bg-amber-400 text-neutral-950 shadow-md shadow-amber-500/20'
-                }`}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{workAndBudget.workflowStatus === 'President Approved' ? 'Approved by President' : 'Sign Off & Approve'}</span>
-              </button>
-            ) : (
-              <div className="text-right text-[11px] text-neutral-400">
-                <span>President approval required</span>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : showHymnSheet ? (
+      {showHymnSheet && (
         <div className="flex justify-end">
           <button
             id="open-hymn-sheet-modal-btn"
             onClick={() => setIsHymnSheetModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 transition-colors border border-amber-500/30"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 transition-colors border border-amber-500/30"
             title="View & Print Official Choral Hymn Sheet"
           >
             <FileText className="w-3.5 h-3.5 text-amber-400" />
             <span>Hymn Sheet</span>
           </button>
         </div>
-      ) : null}
+      )}
 
       {/* Sub-selector pills: Hymn Selection vs Task Assignment vs Scheduling Practices */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#222222] pb-3 gap-3">

@@ -875,11 +875,12 @@ export default function App() {
     }
   };
 
-  // Compute countdown & locked status for the 4 major tabs
+  // Compute countdown & locked status for the 5 major events
+  const newYearDays = getDaysRemaining(calendarConfig?.newYearDate || '2027-01-01', currentDate);
+  const easterDays = getDaysRemaining(calendarConfig?.easterDate || '2027-03-28', currentDate);
   const feastDays = getDaysRemaining(calendarConfig?.feastDate || '2026-09-29', currentDate);
   const carolsDays = getDaysRemaining(calendarConfig?.carolsDate || '2026-12-20', currentDate);
-  const christmasDays = getDaysRemaining(calendarConfig?.christmasNewYearDate || '2026-12-25', currentDate);
-  const easterDays = getDaysRemaining(calendarConfig?.easterDate || '2027-03-28', currentDate);
+  const christmasDays = getDaysRemaining(calendarConfig?.christmasDate || calendarConfig?.christmasNewYearDate || '2026-12-25', currentDate);
 
   // Today's birthday celebrants among choristers
   const birthdayChoristers = useMemo(
@@ -898,8 +899,11 @@ export default function App() {
     );
   }
 
-  const isDeveloper = activeMember?.name?.trim().toLowerCase() === 'joshua peiris';
-  const isLeadJoshua = isDeveloper || activeMember?.id === 'choir-joshua-peiris';
+  const isLeadJoshua = Boolean(
+    activeMember?.name?.trim().toLowerCase().includes('joshua') ||
+    activeMember?.id === 'choir-joshua-peiris' ||
+    (activeMember as any)?.email?.toLowerCase().includes('jshpeiris')
+  );
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased selection:bg-amber-500/30 selection:text-amber-200">
@@ -950,13 +954,15 @@ export default function App() {
           </div>
         )}
 
-        {/* Birthday Celebration Banner for today's celebrants */}
-        <BirthdayCelebrationBanner
-          birthdayChoristers={birthdayChoristers}
-          currentDate={currentDate}
-          onSelectChoristerTab={() => setActiveTab('choristers')}
-          onGenerateFlyer={handleOpenFlyerModal}
-        />
+        {/* Birthday Celebration Banner for today's celebrants - Joshua Only */}
+        {isLeadJoshua && (
+          <BirthdayCelebrationBanner
+            birthdayChoristers={birthdayChoristers}
+            currentDate={currentDate}
+            onSelectChoristerTab={() => setActiveTab('choristers')}
+            onGenerateFlyer={handleOpenFlyerModal}
+          />
+        )}
 
         {/* 100-Day Countdown Summary Banner */}
         <EventCountdownBanner
@@ -969,45 +975,6 @@ export default function App() {
           onOpenCalendarModal={() => setIsCalendarModalOpen(true)}
           onOpenYearPlanModal={() => setIsYearPlanModalOpen(true)}
         />
-
-        {/* Automated Mass Notifications Center Prompt Banner */}
-        {isLeadJoshua && (
-          <div className="mt-4 bg-[#141414] border border-amber-500/30 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/40 shrink-0">
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs sm:text-sm font-bold text-white">
-                    Automated Mass Notification Center
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    All Committee Members
-                  </span>
-                  {unreadNotifCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-black">
-                      {unreadNotifCount} unread
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-neutral-400 truncate">
-                  Automated attendance notifications for each Mass to all committee members
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => setIsNotificationModalOpen(true)}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5"
-              >
-                <Church className="w-3.5 h-3.5 fill-black" />
-                <span>Send Mass Pledges &amp; Alerts</span>
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Five Main Event Tabs + Christmas & New Year Tab Bar */}
         {/* Exact Prompt: "Create five main event tabs: Manage Choristers, Weekly Masses, Easter, Carols, and Feast, along with a Christmas and New Year tab." */}
@@ -1094,106 +1061,152 @@ export default function App() {
               </span>
             </button>
 
-            {/* 3. Feast */}
+            {/* 1. NEW YEAR */}
             <button
-              id="tab-btn-feast"
-              onClick={() => setActiveTab('feast')}
+              id="tab-btn-new-year"
+              onClick={() => setActiveTab('new-year')}
               className={`flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold border-b-2 transition-all ${
-                activeTab === 'feast'
-                  ? 'border-amber-500 text-amber-300 bg-[#171717] shadow-sm'
-                  : 'border-transparent text-neutral-400 hover:text-[#E0E0E0] hover:bg-[#171717]/60'
+                activeTab === 'new-year'
+                  ? newYearDays <= 100
+                    ? 'border-amber-300 text-amber-100 bg-gradient-to-t from-amber-500/35 via-[#2A1D0B] to-[#151006] shadow-[0_0_25px_rgba(245,158,11,0.45)] ring-1 ring-amber-400/60'
+                    : 'border-neutral-700 text-neutral-400 bg-[#080808] shadow-inner opacity-80'
+                  : newYearDays <= 100
+                    ? 'border-amber-400/40 text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                    : 'border-transparent text-neutral-400 hover:text-neutral-300 hover:bg-[#080808] opacity-60 hover:opacity-75'
               }`}
             >
-              <Award className="w-4 h-4 text-amber-400" />
-              <span>Parish Feast & Nine Novenas</span>
-              {/* Dynamic 100-day badge */}
-              {feastDays <= 100 ? (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-bold flex items-center gap-1 border border-emerald-500/30">
-                  <Unlock className="w-2.5 h-2.5" />
-                  {feastDays}d (Active)
+              <Sparkles className={`w-4 h-4 ${newYearDays <= 100 ? 'text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'text-neutral-400'}`} />
+              <span className={newYearDays <= 100 ? 'text-white font-black drop-shadow' : 'text-neutral-400'}>New Year</span>
+              {newYearDays <= 100 ? (
+                <span className="ml-1 px-2.5 py-0.5 rounded-full text-[10px] bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 text-neutral-950 font-black flex items-center gap-1 border border-amber-100 shadow-[0_0_15px_rgba(251,191,36,0.9)] animate-pulse">
+                  <Sparkles className="w-2.5 h-2.5 text-neutral-950" />
+                  <Unlock className="w-2.5 h-2.5 text-neutral-950" />
+                  <span>{newYearDays}d (ACTIVE)</span>
                 </span>
               ) : (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-[#222222] text-neutral-400 font-bold flex items-center gap-1 border border-neutral-700">
-                  <Lock className="w-2.5 h-2.5" />
-                  {feastDays}d
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-[#080808] text-neutral-400 font-bold flex items-center gap-1 border border-[#1A1A1A]">
+                  <Lock className="w-2.5 h-2.5 text-neutral-400" />
+                  <span>{newYearDays}d (LOCKED)</span>
                 </span>
               )}
             </button>
 
-            {/* 4. Carols */}
-            <button
-              id="tab-btn-carols"
-              onClick={() => setActiveTab('carols')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold border-b-2 transition-all ${
-                activeTab === 'carols'
-                  ? 'border-amber-500 text-amber-300 bg-[#171717] shadow-sm'
-                  : 'border-transparent text-neutral-400 hover:text-[#E0E0E0] hover:bg-[#171717]/60'
-              }`}
-            >
-              <Music className="w-4 h-4 text-blue-400" />
-              <span>Carols</span>
-              {/* Dynamic 100-day badge */}
-              {carolsDays <= 100 ? (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-bold flex items-center gap-1 border border-emerald-500/30">
-                  <Unlock className="w-2.5 h-2.5" />
-                  {carolsDays}d
-                </span>
-              ) : (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-[#222222] text-neutral-400 font-bold flex items-center gap-1 border border-neutral-700">
-                  <Lock className="w-2.5 h-2.5" />
-                  {carolsDays}d
-                </span>
-              )}
-            </button>
-
-            {/* 5. Christmas and New Year */}
-            <button
-              id="tab-btn-christmas-new-year"
-              onClick={() => setActiveTab('christmas-new-year')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold border-b-2 transition-all ${
-                activeTab === 'christmas-new-year'
-                  ? 'border-amber-500 text-amber-300 bg-[#171717] shadow-sm'
-                  : 'border-transparent text-neutral-400 hover:text-[#E0E0E0] hover:bg-[#171717]/60'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-rose-400" />
-              <span>Christmas & New Year</span>
-              {/* Dynamic 100-day badge */}
-              {christmasDays <= 100 ? (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-bold flex items-center gap-1 border border-emerald-500/30">
-                  <Unlock className="w-2.5 h-2.5" />
-                  {christmasDays}d
-                </span>
-              ) : (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-[#222222] text-neutral-400 font-bold flex items-center gap-1 border border-neutral-700">
-                  <Lock className="w-2.5 h-2.5" />
-                  {christmasDays}d
-                </span>
-              )}
-            </button>
-
-            {/* 6. Easter */}
+            {/* 2. EASTER */}
             <button
               id="tab-btn-easter"
               onClick={() => setActiveTab('easter')}
               className={`flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold border-b-2 transition-all ${
                 activeTab === 'easter'
-                  ? 'border-amber-500 text-amber-300 bg-[#171717] shadow-sm'
-                  : 'border-transparent text-neutral-400 hover:text-[#E0E0E0] hover:bg-[#171717]/60'
+                  ? easterDays <= 100
+                    ? 'border-purple-300 text-purple-100 bg-gradient-to-t from-purple-500/35 via-[#291336] to-[#14081C] shadow-[0_0_25px_rgba(168,85,247,0.45)] ring-1 ring-purple-400/60'
+                    : 'border-neutral-700 text-neutral-400 bg-[#080808] shadow-inner opacity-80'
+                  : easterDays <= 100
+                    ? 'border-purple-400/40 text-purple-200 bg-purple-500/10 hover:bg-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                    : 'border-transparent text-neutral-400 hover:text-neutral-300 hover:bg-[#080808] opacity-60 hover:opacity-75'
               }`}
             >
-              <Flame className="w-4 h-4 text-purple-400" />
-              <span>Easter & Holy Week</span>
-              {/* Dynamic 100-day badge */}
+              <Flame className={`w-4 h-4 ${easterDays <= 100 ? 'text-purple-300 drop-shadow-[0_0_8px_rgba(216,180,254,0.8)]' : 'text-neutral-400'}`} />
+              <span className={easterDays <= 100 ? 'text-white font-black drop-shadow' : 'text-neutral-400'}>Easter</span>
               {easterDays <= 100 ? (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-bold flex items-center gap-1 border border-emerald-500/30">
-                  <Unlock className="w-2.5 h-2.5" />
-                  {easterDays}d
+                <span className="ml-1 px-2.5 py-0.5 rounded-full text-[10px] bg-gradient-to-r from-purple-400 via-fuchsia-300 to-amber-300 text-neutral-950 font-black flex items-center gap-1 border border-purple-100 shadow-[0_0_15px_rgba(168,85,247,0.9)] animate-pulse">
+                  <Sparkles className="w-2.5 h-2.5 text-neutral-950" />
+                  <Unlock className="w-2.5 h-2.5 text-neutral-950" />
+                  <span>{easterDays}d (ACTIVE)</span>
                 </span>
               ) : (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-[#222222] text-neutral-400 font-bold flex items-center gap-1 border border-neutral-700">
-                  <Lock className="w-2.5 h-2.5" />
-                  {easterDays}d
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-[#080808] text-neutral-400 font-bold flex items-center gap-1 border border-[#1A1A1A]">
+                  <Lock className="w-2.5 h-2.5 text-neutral-400" />
+                  <span>{easterDays}d (LOCKED)</span>
+                </span>
+              )}
+            </button>
+
+            {/* 3. FEAST */}
+            <button
+              id="tab-btn-feast"
+              onClick={() => setActiveTab('feast')}
+              className={`flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold border-b-2 transition-all ${
+                activeTab === 'feast'
+                  ? feastDays <= 100
+                    ? 'border-amber-300 text-amber-100 bg-gradient-to-t from-amber-500/35 via-[#2A1D0B] to-[#151006] shadow-[0_0_25px_rgba(245,158,11,0.45)] ring-1 ring-amber-400/60'
+                    : 'border-neutral-700 text-neutral-400 bg-[#080808] shadow-inner opacity-80'
+                  : feastDays <= 100
+                    ? 'border-amber-400/40 text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                    : 'border-transparent text-neutral-400 hover:text-neutral-300 hover:bg-[#080808] opacity-60 hover:opacity-75'
+              }`}
+            >
+              <Award className={`w-4 h-4 ${feastDays <= 100 ? 'text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'text-neutral-400'}`} />
+              <span className={feastDays <= 100 ? 'text-white font-black drop-shadow' : 'text-neutral-400'}>Feast</span>
+              {feastDays <= 100 ? (
+                <span className="ml-1 px-2.5 py-0.5 rounded-full text-[10px] bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 text-neutral-950 font-black flex items-center gap-1 border border-amber-100 shadow-[0_0_15px_rgba(251,191,36,0.9)] animate-pulse">
+                  <Sparkles className="w-2.5 h-2.5 text-neutral-950" />
+                  <Unlock className="w-2.5 h-2.5 text-neutral-950" />
+                  <span>{feastDays}d (ACTIVE)</span>
+                </span>
+              ) : (
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-[#080808] text-neutral-400 font-bold flex items-center gap-1 border border-[#1A1A1A]">
+                  <Lock className="w-2.5 h-2.5 text-neutral-400" />
+                  <span>{feastDays}d (LOCKED)</span>
+                </span>
+              )}
+            </button>
+
+            {/* 4. CAROLS */}
+            <button
+              id="tab-btn-carols"
+              onClick={() => setActiveTab('carols')}
+              className={`flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold border-b-2 transition-all ${
+                activeTab === 'carols'
+                  ? carolsDays <= 100
+                    ? 'border-blue-300 text-blue-100 bg-gradient-to-t from-blue-500/35 via-[#0F1E33] to-[#08101C] shadow-[0_0_25px_rgba(59,130,246,0.45)] ring-1 ring-blue-400/60'
+                    : 'border-neutral-700 text-neutral-400 bg-[#080808] shadow-inner opacity-80'
+                  : carolsDays <= 100
+                    ? 'border-blue-400/40 text-blue-200 bg-blue-500/10 hover:bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                    : 'border-transparent text-neutral-400 hover:text-neutral-300 hover:bg-[#080808] opacity-60 hover:opacity-75'
+              }`}
+            >
+              <Music className={`w-4 h-4 ${carolsDays <= 100 ? 'text-blue-300 drop-shadow-[0_0_8px_rgba(147,197,253,0.8)]' : 'text-neutral-400'}`} />
+              <span className={carolsDays <= 100 ? 'text-white font-black drop-shadow' : 'text-neutral-400'}>Carols</span>
+              {carolsDays <= 100 ? (
+                <span className="ml-1 px-2.5 py-0.5 rounded-full text-[10px] bg-gradient-to-r from-blue-400 via-sky-300 to-emerald-400 text-neutral-950 font-black flex items-center gap-1 border border-blue-100 shadow-[0_0_15px_rgba(59,130,246,0.9)] animate-pulse">
+                  <Sparkles className="w-2.5 h-2.5 text-neutral-950" />
+                  <Unlock className="w-2.5 h-2.5 text-neutral-950" />
+                  <span>{carolsDays}d (ACTIVE)</span>
+                </span>
+              ) : (
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-[#080808] text-neutral-400 font-bold flex items-center gap-1 border border-[#1A1A1A]">
+                  <Lock className="w-2.5 h-2.5 text-neutral-400" />
+                  <span>{carolsDays}d (LOCKED)</span>
+                </span>
+              )}
+            </button>
+
+            {/* 5. CHRISTMAS */}
+            <button
+              id="tab-btn-christmas"
+              onClick={() => setActiveTab('christmas')}
+              className={`flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold border-b-2 transition-all ${
+                activeTab === 'christmas' || activeTab === 'christmas-new-year'
+                  ? christmasDays <= 100
+                    ? 'border-rose-300 text-rose-100 bg-gradient-to-t from-rose-500/35 via-[#30121C] to-[#17080D] shadow-[0_0_25px_rgba(244,63,94,0.45)] ring-1 ring-rose-400/60'
+                    : 'border-neutral-700 text-neutral-400 bg-[#080808] shadow-inner opacity-80'
+                  : christmasDays <= 100
+                    ? 'border-rose-400/40 text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
+                    : 'border-transparent text-neutral-400 hover:text-neutral-300 hover:bg-[#080808] opacity-60 hover:opacity-75'
+              }`}
+            >
+              <Sparkles className={`w-4 h-4 ${christmasDays <= 100 ? 'text-rose-300 drop-shadow-[0_0_8px_rgba(253,164,175,0.8)]' : 'text-neutral-400'}`} />
+              <span className={christmasDays <= 100 ? 'text-white font-black drop-shadow' : 'text-neutral-400'}>Christmas</span>
+              {christmasDays <= 100 ? (
+                <span className="ml-1 px-2.5 py-0.5 rounded-full text-[10px] bg-gradient-to-r from-rose-400 via-pink-300 to-amber-300 text-neutral-950 font-black flex items-center gap-1 border border-rose-100 shadow-[0_0_15px_rgba(244,63,94,0.9)] animate-pulse">
+                  <Sparkles className="w-2.5 h-2.5 text-neutral-950" />
+                  <Unlock className="w-2.5 h-2.5 text-neutral-950" />
+                  <span>{christmasDays}d (ACTIVE)</span>
+                </span>
+              ) : (
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-[#080808] text-neutral-400 font-bold flex items-center gap-1 border border-[#1A1A1A]">
+                  <Lock className="w-2.5 h-2.5 text-neutral-400" />
+                  <span>{christmasDays}d (LOCKED)</span>
                 </span>
               )}
             </button>
@@ -1278,7 +1291,47 @@ export default function App() {
             <HymnsTab />
           )}
 
-          {/* TAB 3: FEAST & NOVENAS */}
+          {/* 1. NEW YEAR */}
+          {activeTab === 'new-year' && (
+            <MajorEventTab
+              event={majorEvents['new-year']}
+              currentDate={currentDate}
+              choristers={choristers}
+              activeMember={activeMember}
+              allPractices={practices}
+              onSavePractices={handleSavePractices}
+              onDeletePractice={handleDeletePractice}
+              onSaveWorkAndBudget={(updatedWork) => handleSaveMajorEventWork('new-year', updatedWork)}
+              onSaveMajorEvent={async (updatedEv) => {
+                setMajorEvents(prev => ({ ...prev, 'new-year': updatedEv }));
+                try {
+                  await fetch(`/api/events/new-year`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event: updatedEv, actor: activeMember }),
+                  });
+                } catch {}
+              }}
+              onOpenCalendarModal={() => setIsCalendarModalOpen(true)}
+            />
+          )}
+
+          {/* 2. EASTER */}
+          {activeTab === 'easter' && (
+            <MajorEventTab
+              event={majorEvents.easter}
+              currentDate={currentDate}
+              choristers={choristers}
+              activeMember={activeMember}
+              allPractices={practices}
+              onSavePractices={handleSavePractices}
+              onDeletePractice={handleDeletePractice}
+              onSaveWorkAndBudget={(updatedWork) => handleSaveMajorEventWork('easter', updatedWork)}
+              onOpenCalendarModal={() => setIsCalendarModalOpen(true)}
+            />
+          )}
+
+          {/* 3. FEAST */}
           {activeTab === 'feast' && (
             <FeastTab
               event={{
@@ -1297,7 +1350,7 @@ export default function App() {
             />
           )}
 
-          {/* TAB 4: CAROLS */}
+          {/* 4. CAROLS */}
           {activeTab === 'carols' && (
             <MajorEventTab
               event={majorEvents.carols}
@@ -1312,32 +1365,27 @@ export default function App() {
             />
           )}
 
-          {/* TAB 5: CHRISTMAS AND NEW YEAR */}
-          {activeTab === 'christmas-new-year' && (
+          {/* 5. CHRISTMAS */}
+          {(activeTab === 'christmas' || activeTab === 'christmas-new-year') && (
             <MajorEventTab
-              event={majorEvents['christmas-new-year']}
+              event={majorEvents.christmas}
               currentDate={currentDate}
               choristers={choristers}
               activeMember={activeMember}
               allPractices={practices}
               onSavePractices={handleSavePractices}
               onDeletePractice={handleDeletePractice}
-              onSaveWorkAndBudget={(updatedWork) => handleSaveMajorEventWork('christmas-new-year', updatedWork)}
-              onOpenCalendarModal={() => setIsCalendarModalOpen(true)}
-            />
-          )}
-
-          {/* TAB 6: EASTER */}
-          {activeTab === 'easter' && (
-            <MajorEventTab
-              event={majorEvents.easter}
-              currentDate={currentDate}
-              choristers={choristers}
-              activeMember={activeMember}
-              allPractices={practices}
-              onSavePractices={handleSavePractices}
-              onDeletePractice={handleDeletePractice}
-              onSaveWorkAndBudget={(updatedWork) => handleSaveMajorEventWork('easter', updatedWork)}
+              onSaveWorkAndBudget={(updatedWork) => handleSaveMajorEventWork('christmas', updatedWork)}
+              onSaveMajorEvent={async (updatedEv) => {
+                setMajorEvents(prev => ({ ...prev, christmas: updatedEv }));
+                try {
+                  await fetch(`/api/events/christmas`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event: updatedEv, actor: activeMember }),
+                  });
+                } catch {}
+              }}
               onOpenCalendarModal={() => setIsCalendarModalOpen(true)}
             />
           )}
@@ -1497,42 +1545,22 @@ export default function App() {
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   onClick={() => {
-                    setActiveTab('feast');
+                    setActiveTab('new-year');
                     setIsMobileMoreOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className={`p-3 rounded-xl border text-left transition-all ${
-                    activeTab === 'feast'
+                    activeTab === 'new-year'
                       ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
                       : 'bg-[#1C1C1C] border-[#2A2A2A] text-neutral-300 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <Award className="w-4 h-4 text-amber-400" />
-                    <span className="text-[10px] font-bold text-emerald-400">{feastDays}d</span>
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span className="text-[10px] font-bold text-emerald-400">{newYearDays}d</span>
                   </div>
-                  <div className="font-bold text-xs text-white">Parish Feast & Nine Novenas</div>
-                  <div className="text-[10px] text-neutral-400">9 Novena Masses</div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('carols');
-                    setIsMobileMoreOpen(false);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`p-3 rounded-xl border text-left transition-all ${
-                    activeTab === 'carols'
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
-                      : 'bg-[#1C1C1C] border-[#2A2A2A] text-neutral-300 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <Music className="w-4 h-4 text-blue-400" />
-                    <span className="text-[10px] font-bold text-neutral-400">{carolsDays}d</span>
-                  </div>
-                  <div className="font-bold text-xs text-white">Carols Service</div>
-                  <div className="text-[10px] text-neutral-400">Christmas Festival</div>
+                  <div className="font-bold text-xs text-white">New Year Mass</div>
+                  <div className="text-[10px] text-neutral-400">Thanksgiving Service</div>
                 </button>
 
                 <button
@@ -1557,22 +1585,62 @@ export default function App() {
 
                 <button
                   onClick={() => {
-                    setActiveTab('christmas-new-year');
+                    setActiveTab('feast');
                     setIsMobileMoreOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className={`p-3 rounded-xl border text-left transition-all ${
-                    activeTab === 'christmas-new-year'
-                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    activeTab === 'feast'
+                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
                       : 'bg-[#1C1C1C] border-[#2A2A2A] text-neutral-300 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                    <Award className="w-4 h-4 text-amber-400" />
+                    <span className="text-[10px] font-bold text-emerald-400">{feastDays}d</span>
+                  </div>
+                  <div className="font-bold text-xs text-white">Parish Feast & Novenas</div>
+                  <div className="text-[10px] text-neutral-400">9 Novena Masses</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('carols');
+                    setIsMobileMoreOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    activeTab === 'carols'
+                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+                      : 'bg-[#1C1C1C] border-[#2A2A2A] text-neutral-300 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <Music className="w-4 h-4 text-blue-400" />
+                    <span className="text-[10px] font-bold text-neutral-400">{carolsDays}d</span>
+                  </div>
+                  <div className="font-bold text-xs text-white">Carols Service</div>
+                  <div className="text-[10px] text-neutral-400">Two Sessions (Lessons)</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('christmas');
+                    setIsMobileMoreOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    activeTab === 'christmas' || activeTab === 'christmas-new-year'
+                      ? 'bg-rose-500/20 border-rose-500/50 text-rose-300'
+                      : 'bg-[#1C1C1C] border-[#2A2A2A] text-neutral-300 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <Sparkles className="w-4 h-4 text-rose-400" />
                     <span className="text-[10px] font-bold text-neutral-400">{christmasDays}d</span>
                   </div>
-                  <div className="font-bold text-xs text-white">Christmas & New Year</div>
-                  <div className="text-[10px] text-neutral-400">Midnight & Day Masses</div>
+                  <div className="font-bold text-xs text-white">Christmas Mass</div>
+                  <div className="text-[10px] text-neutral-400">Midnight & Morning</div>
                 </button>
               </div>
             </div>

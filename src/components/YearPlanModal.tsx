@@ -106,7 +106,7 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
   const allYearEvents = useMemo(() => {
     const config = calendarConfig || ({} as AnnualCalendarConfig);
     const feastDate = config.feastDate || '2026-09-29';
-    const christmasDate = config.christmasNewYearDate || '2026-12-25';
+    const christmasDate = config.christmasDate || config.christmasNewYearDate || '2026-12-25';
     const newYearDate = config.newYearDate || '2027-01-01';
     const easterDate = config.easterDate || '2027-03-28';
     const carolsDate = config.carolsDate || '2026-12-20';
@@ -147,10 +147,10 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
         isCustom: false,
       },
       {
-        id: 'christmas-new-year',
+        id: 'christmas',
         title: 'Christmas & Nativity Midnight Mass',
         subtitle: 'Solemn Nativity Celebration, Midnight High Mass & Christmas Liturgy',
-        tabKey: 'christmas-new-year',
+        tabKey: 'christmas',
         date: christmasDate,
         endDate: undefined as string | undefined,
         backgroundUrl: config.christmasBackgroundUrl,
@@ -167,7 +167,7 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
         id: 'new-year',
         title: 'New Year Thanksgiving & Midnight Mass',
         subtitle: "Solemnity of Mary, Mother of God, New Year's Eve Midnight Mass & Thanksgiving Liturgy",
-        tabKey: 'christmas-new-year',
+        tabKey: 'new-year',
         date: newYearDate,
         endDate: undefined as string | undefined,
         backgroundUrl: config.newYearBackgroundUrl,
@@ -387,8 +387,9 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
 
       if (editingBackgroundEventId === 'feast') {
         updatedConfig.feastBackgroundUrl = trimmedUrl || undefined;
-      } else if (editingBackgroundEventId === 'christmas-new-year') {
+      } else if (editingBackgroundEventId === 'christmas') {
         updatedConfig.christmasBackgroundUrl = trimmedUrl || undefined;
+        updatedConfig.christmasNewYearDate = updatedConfig.christmasNewYearDate || trimmedUrl;
       } else if (editingBackgroundEventId === 'new-year') {
         updatedConfig.newYearBackgroundUrl = trimmedUrl || undefined;
       } else if (editingBackgroundEventId === 'easter') {
@@ -432,13 +433,17 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
         feastDate: calendarConfig?.feastDate || '2026-09-29',
         carolsDate: calendarConfig?.carolsDate || '2026-12-20',
         easterDate: calendarConfig?.easterDate || '2027-03-28',
+        christmasDate: calendarConfig?.christmasDate || calendarConfig?.christmasNewYearDate || '2026-12-25',
         christmasNewYearDate: calendarConfig?.christmasNewYearDate || '2026-12-25',
         newYearDate: calendarConfig?.newYearDate || '2027-01-01',
       };
 
       if (editingCoreDateEvent.id === 'feast') updatedConfig.feastDate = coreDateInput;
       else if (editingCoreDateEvent.id === 'carols') updatedConfig.carolsDate = coreDateInput;
-      else if (editingCoreDateEvent.id === 'christmas-new-year') updatedConfig.christmasNewYearDate = coreDateInput;
+      else if (editingCoreDateEvent.id === 'christmas') {
+        updatedConfig.christmasDate = coreDateInput;
+        updatedConfig.christmasNewYearDate = coreDateInput;
+      }
       else if (editingCoreDateEvent.id === 'new-year') updatedConfig.newYearDate = coreDateInput;
       else if (editingCoreDateEvent.id === 'easter') updatedConfig.easterDate = coreDateInput;
 
@@ -658,21 +663,60 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
                 const bgImage = getDriveDirectImageUrl(ev.backgroundUrl, 1000);
                 const isCore = Boolean(ev.isPermanent);
 
+                const isUnlocked = countdown.isUnlocked;
+
                 return (
                   <div
                     key={ev.id}
-                    className="relative rounded-2xl sm:rounded-3xl border border-[#282828] overflow-hidden flex flex-col justify-between shadow-xl group hover:border-amber-500/50 transition-all min-h-[240px]"
+                    className={`relative rounded-2xl sm:rounded-3xl border overflow-hidden flex flex-col justify-between transition-all min-h-[250px] group ${
+                      isUnlocked
+                        ? 'border-2 border-amber-300 bg-gradient-to-br from-[#4A300E] via-[#2A1B07] to-[#161005] shadow-[0_0_55px_rgba(245,158,11,0.55)] ring-2 ring-amber-300/80 hover:scale-[1.01]'
+                        : 'border-2 border-[#101010] bg-[#020202] opacity-60 hover:opacity-75 shadow-[inset_0_4px_20px_rgba(0,0,0,0.95)]'
+                    }`}
                   >
+                    {/* Active Window Ambient Radiant Lighting Orbs */}
+                    {isUnlocked && (
+                      <>
+                        <div className="absolute -top-10 -right-10 w-48 h-48 bg-amber-400/35 rounded-full blur-3xl pointer-events-none animate-pulse" />
+                        <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-emerald-400/30 rounded-full blur-2xl pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/15 via-transparent to-amber-300/20 pointer-events-none" />
+                      </>
+                    )}
+
+                    {/* Dark Padlock Watermark for Locked In Vault Events */}
+                    {!isUnlocked && (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/90 to-black pointer-events-none" />
+                        <Lock className="absolute -right-3 -bottom-3 w-40 h-40 text-white/[0.04] pointer-events-none stroke-[1.4]" />
+                      </>
+                    )}
+
                     {/* Background Picture with Dark Aesthetic Overlay (Google Drive direct stream) */}
                     {bgImage ? (
                       <div 
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                        className={`absolute inset-0 bg-cover bg-center transition-all duration-700 ${
+                          isUnlocked 
+                            ? 'opacity-95 brightness-125 contrast-110 saturate-125 group-hover:scale-105' 
+                            : 'opacity-10 grayscale contrast-150 brightness-[0.06]'
+                        }`}
                         style={{ backgroundImage: `url(${bgImage})` }}
                       >
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/55" />
+                        <div 
+                          className={`absolute inset-0 ${
+                            isUnlocked
+                              ? 'bg-gradient-to-t from-[#140F05]/95 via-[#140F05]/40 to-transparent'
+                              : 'bg-gradient-to-t from-[#020202] via-[#020202]/98 to-[#020202]/92'
+                          }`} 
+                        />
                       </div>
                     ) : (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${ev.themeGradient}`} />
+                      <div 
+                        className={`absolute inset-0 ${
+                          isUnlocked 
+                            ? `bg-gradient-to-br ${ev.themeGradient}` 
+                            : 'bg-[#020202]'
+                        }`} 
+                      />
                     )}
 
                     {/* Card Content (Relative Z-10) */}
@@ -681,20 +725,27 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
                       <div>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border flex items-center gap-1 shadow-sm ${ev.badgeColor}`}>
+                            <span 
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border flex items-center gap-1 shadow-sm ${
+                                isUnlocked 
+                                  ? ev.badgeColor 
+                                  : 'bg-[#080808] text-neutral-400 border-[#1C1C1C]'
+                              }`}
+                            >
                               {isCore ? <Flame className="w-2.5 h-2.5" /> : <CalendarIcon className="w-2.5 h-2.5" />}
-                              <span>{isCore ? 'Core 4 Feast (Never Changes)' : 'Custom Event'}</span>
+                              <span>{isCore ? 'Core 4 Feast (Fixed)' : 'Custom Event'}</span>
                             </span>
 
-                            {countdown.isUnlocked ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 animate-pulse">
-                                <Unlock className="w-2.5 h-2.5" />
-                                <span>Active 100-Day Window</span>
+                            {isUnlocked ? (
+                              <span className="px-3 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 text-neutral-950 border border-amber-100 flex items-center gap-1.5 shadow-[0_0_20px_rgba(251,191,36,0.95)] ring-2 ring-amber-300/70 animate-pulse">
+                                <Sparkles className="w-3 h-3 text-neutral-950" />
+                                <Unlock className="w-2.5 h-2.5 text-neutral-950" />
+                                <span>ACTIVE WINDOW</span>
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1A1A1A]/85 text-neutral-400 border border-[#333333] flex items-center gap-1">
-                                <Lock className="w-2.5 h-2.5" />
-                                <span>Scheduled (&gt;100d)</span>
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#080808] text-neutral-400 border border-[#1C1C1C] flex items-center gap-1">
+                                <Lock className="w-2.5 h-2.5 text-neutral-400" />
+                                <span>LOCKED (&gt;100d)</span>
                               </span>
                             )}
                           </div>
@@ -708,7 +759,7 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
                                   type="button"
                                   onClick={() => handleOpenEditCoreDate(ev)}
                                   className="px-2 py-1 rounded-lg text-emerald-400 hover:text-emerald-200 hover:bg-emerald-500/25 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-                                  title="Edit date of this never-changing calendar event (Lead Joshua Only)"
+                                  title="Edit date of this calendar event (Lead Joshua Only)"
                                 >
                                   <CalendarDays className="w-3.5 h-3.5" />
                                   <span className="hidden sm:inline">Edit Date</span>
@@ -751,7 +802,7 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
                           {!isLeadJoshua && isCore && (
                             <div 
                               className="flex items-center gap-1 shrink-0 bg-black/60 px-2 py-1 rounded-xl border border-neutral-800 text-[10px] text-neutral-400 font-medium"
-                              title="Only Lead Joshua Peiris is authorized to edit the dates of never-changing calendar events."
+                              title="Only Lead Joshua Peiris is authorized to edit the dates of calendar events."
                             >
                               <Lock className="w-2.5 h-2.5 text-amber-400/80" />
                               <span className="hidden xs:inline">Date Locked (Joshua Only)</span>
@@ -760,30 +811,54 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
                         </div>
 
                         {/* Title & Subtitle */}
-                        <h4 className="text-base sm:text-lg font-black text-white mt-2 leading-tight drop-shadow-md">
+                        <h4 
+                          className={`text-base sm:text-lg font-black mt-2 leading-tight ${
+                            isUnlocked 
+                              ? 'text-white drop-shadow-[0_2px_12px_rgba(251,191,36,0.9)]' 
+                              : 'text-neutral-400'
+                          }`}
+                        >
                           {ev.title}
                         </h4>
-                        <p className="text-xs text-neutral-300 line-clamp-2 mt-0.5 drop-shadow-sm font-medium">
+                        <p className={`text-xs line-clamp-2 mt-0.5 font-medium ${isUnlocked ? 'text-amber-100/80 drop-shadow-sm' : 'text-neutral-500'}`}>
                           {ev.subtitle}
                         </p>
                       </div>
 
                       {/* Countdown & Metrics */}
-                      <div className="bg-black/70 backdrop-blur-md p-3 rounded-2xl border border-white/10 space-y-2">
+                      <div 
+                        className={`p-3 rounded-2xl border space-y-2 backdrop-blur-md ${
+                          isUnlocked 
+                            ? 'bg-black/70 border-amber-400/50 shadow-[0_0_20px_rgba(245,158,11,0.25)]' 
+                            : 'bg-[#040404] border-[#141414] shadow-inner'
+                        }`}
+                      >
                         <div className="flex items-baseline justify-between gap-2">
                           <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl font-black text-white font-mono tracking-tight">
+                            <span 
+                              className={`text-2xl font-black font-mono tracking-tight ${
+                                isUnlocked 
+                                  ? 'text-amber-100 drop-shadow-[0_0_20px_rgba(251,191,36,0.95)]' 
+                                  : 'text-neutral-400'
+                              }`}
+                            >
                               {countdown.days}
                             </span>
-                            <span className="text-xs text-neutral-400 font-semibold">days remaining</span>
+                            <span className={`text-xs ${isUnlocked ? 'text-amber-300 font-bold drop-shadow' : 'text-neutral-400'}`}>
+                              days remaining
+                            </span>
                           </div>
 
                           <div className="text-right">
-                            <div className="text-xs font-bold text-amber-300 font-mono">
+                            <div 
+                              className={`text-xs font-bold font-mono ${
+                                isUnlocked ? 'text-amber-200 drop-shadow' : 'text-neutral-400'
+                              }`}
+                            >
                               {formatDisplayDate(ev.date)}
                             </div>
                             {ev.endDate && (
-                              <div className="text-[10px] text-neutral-400 font-mono">
+                              <div className={`text-[10px] font-mono ${isUnlocked ? 'text-neutral-300' : 'text-neutral-600'}`}>
                                 to {formatDisplayDate(ev.endDate)}
                               </div>
                             )}
@@ -792,23 +867,31 @@ export const YearPlanModal: React.FC<YearPlanModalProps> = ({
 
                         {/* 100-Day Unlock Progress Bar */}
                         <div>
-                          <div className="w-full bg-neutral-800/80 h-1.5 rounded-full overflow-hidden">
+                          <div 
+                            className={`w-full h-1.5 rounded-full overflow-hidden border ${
+                              isUnlocked 
+                                ? 'bg-black/70 border-amber-400/50 shadow-inner' 
+                                : 'bg-[#080808] border border-[#141414]'
+                            }`}
+                          >
                             <div
                               className={`h-full transition-all duration-500 ${
-                                countdown.isUnlocked ? 'bg-gradient-to-r from-amber-400 to-emerald-400' : 'bg-neutral-600'
+                                isUnlocked 
+                                  ? 'bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-400 shadow-[0_0_15px_rgba(251,191,36,1)]' 
+                                  : 'bg-neutral-800'
                               }`}
                               style={{
                                 width: `${Math.min(100, Math.max(5, ((365 - countdown.days) / 365) * 100))}%`,
                               }}
                             />
                           </div>
-                          <div className="flex items-center justify-between text-[10px] text-neutral-400 mt-1">
-                            <span>
-                              {countdown.isUnlocked 
+                          <div className="flex items-center justify-between text-[10px] mt-1 font-medium">
+                            <span className={isUnlocked ? 'text-emerald-300 font-black drop-shadow-[0_0_10px_rgba(52,211,153,0.9)]' : 'text-neutral-400'}>
+                              {isUnlocked 
                                 ? '✨ Active Preparation in progress (≤100d)' 
-                                : `Preparation window unlocks in ${countdown.daysUntilUnlock} days`}
+                                : `🔒 Preparation window locked (unlocks in ${countdown.daysUntilUnlock}d)`}
                             </span>
-                            <span className="font-mono text-neutral-400">
+                            <span className={`font-mono ${isUnlocked ? 'text-amber-200 font-bold drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]' : 'text-neutral-400'}`}>
                               {countdown.hours}h {countdown.minutes}m
                             </span>
                           </div>

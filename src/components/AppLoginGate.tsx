@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { CommitteeMember, Chorister } from '../types';
 import { getDriveDirectImageUrl, CHOIR_LOGO_URL } from '../utils/driveImage';
-import { InstallAppModal } from './InstallAppModal';
 
 interface AppLoginGateProps {
   committeeMembers: CommitteeMember[];
@@ -42,7 +41,6 @@ export const AppLoginGate: React.FC<AppLoginGateProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [showPin, setShowPin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<{
     member: CommitteeMember;
     chorister?: Chorister;
@@ -71,7 +69,8 @@ export const AppLoginGate: React.FC<AppLoginGateProps> = ({
       const nextPin = pinInput + digit;
       setPinInput(nextPin);
       setErrorMessage('');
-      if (nextPin.length === expectedPin.length) {
+      const targetLen = (expectedPin && expectedPin.length >= 4) ? expectedPin.length : 4;
+      if (nextPin.length === targetLen) {
         verifyPin(nextPin);
       }
     }
@@ -104,19 +103,12 @@ export const AppLoginGate: React.FC<AppLoginGateProps> = ({
         setAuthenticatedUser({ member: authedMember, chorister: authedChorister });
         setIsLoading(false);
       } else {
-        // Fallback local check
-        if (pinToTest === expectedPin) {
-          setErrorMessage('');
-          const authedChorister = choristers.find((c) => c.id === selectedMember.choristerId || c.name === selectedMember.name);
-          setAuthenticatedUser({ member: selectedMember, chorister: authedChorister });
-          setIsLoading(false);
-        } else {
-          setErrorMessage('Incorrect PIN. Please try again.');
-          setIsLoading(false);
-        }
+        const errData = await res.json().catch(() => ({}));
+        setErrorMessage(errData.error || 'Incorrect PIN. Please try again.');
+        setIsLoading(false);
       }
     } catch {
-      // Local fallback
+      // Local offline fallback if server unreachable
       if (pinToTest === expectedPin) {
         setErrorMessage('');
         const authedChorister = choristers.find((c) => c.id === selectedMember.choristerId || c.name === selectedMember.name);
@@ -561,12 +553,6 @@ export const AppLoginGate: React.FC<AppLoginGateProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Universal Home Screen Installation Modal */}
-      <InstallAppModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-      />
     </div>
   );
 };

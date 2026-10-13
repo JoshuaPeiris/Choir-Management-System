@@ -57,7 +57,7 @@ export const EventCountdownBanner: React.FC<EventCountdownBannerProps> = ({
   );
 
   const coreEvents: Array<{
-    id: 'feast' | 'carols' | 'easter' | 'christmas-new-year' | 'new-year';
+    id: 'feast' | 'carols' | 'easter' | 'christmas' | 'new-year';
     label: string;
     tabKey: string;
     date: string;
@@ -90,10 +90,10 @@ export const EventCountdownBanner: React.FC<EventCountdownBannerProps> = ({
       icon: Music,
     },
     {
-      id: 'christmas-new-year',
+      id: 'christmas',
       label: 'Christmas & Nativity',
-      tabKey: 'christmas-new-year',
-      date: calendarConfig?.christmasNewYearDate || '2026-12-25',
+      tabKey: 'christmas',
+      date: calendarConfig?.christmasDate || calendarConfig?.christmasNewYearDate || '2026-12-25',
       backgroundUrl: calendarConfig?.christmasBackgroundUrl,
       themeGradient: 'from-rose-950/80 via-[#210810]/85 to-[#0F0F0F]',
       accentColor: 'border-rose-500/40 text-rose-300',
@@ -103,7 +103,7 @@ export const EventCountdownBanner: React.FC<EventCountdownBannerProps> = ({
     {
       id: 'new-year',
       label: 'New Year Thanksgiving Mass',
-      tabKey: 'christmas-new-year',
+      tabKey: 'new-year',
       date: calendarConfig?.newYearDate || '2027-01-01',
       backgroundUrl: calendarConfig?.newYearBackgroundUrl,
       themeGradient: 'from-amber-950/80 via-[#261B06]/85 to-[#0F0F0F]',
@@ -191,6 +191,7 @@ export const EventCountdownBanner: React.FC<EventCountdownBannerProps> = ({
             const isSelected = activeTab === item.tabKey;
             const bgImage = getDriveDirectImageUrl(item.backgroundUrl, 800);
             const isCore = !('isCustom' in item && item.isCustom);
+            const isUnlocked = countdown.isUnlocked;
 
             return (
               <div
@@ -203,20 +204,45 @@ export const EventCountdownBanner: React.FC<EventCountdownBannerProps> = ({
                     onOpenYearPlanModal();
                   }
                 }}
-                className={`relative overflow-hidden rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 border transition-all cursor-pointer flex flex-col justify-between shadow-lg group ${
-                  isSelected
-                    ? 'ring-2 ring-amber-500/80 border-amber-500/60 shadow-amber-500/15 scale-[1.01]'
-                    : 'border-[#262626] hover:border-amber-500/50 hover:bg-[#161616]'
+                className={`relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 transition-all cursor-pointer flex flex-col justify-between group ${
+                  isUnlocked
+                    ? isSelected
+                      ? 'bg-gradient-to-br from-[#4A300E] via-[#2A1B07] to-[#161005] border-2 border-amber-300 shadow-[0_0_55px_rgba(245,158,11,0.6)] ring-2 ring-amber-300/90 scale-[1.02]'
+                      : 'bg-gradient-to-br from-[#3D260B] via-[#221606] to-[#120D04] border-2 border-amber-400/80 hover:border-amber-300 shadow-[0_0_40px_rgba(245,158,11,0.4)] ring-1 ring-amber-400/50 hover:scale-[1.01]'
+                    : isSelected
+                      ? 'bg-[#020202] border-2 border-[#1E1E1E] opacity-75 shadow-inner'
+                      : 'bg-[#020202] border-2 border-[#101010] hover:border-[#1A1A1A] opacity-60 hover:opacity-75 shadow-[inset_0_4px_20px_rgba(0,0,0,0.95)]'
                 }`}
               >
-                {/* Background Picture with Dark Aesthetic Overlay */}
+                {/* Luminous Radiant Glow for Active Window Events */}
+                {isUnlocked && (
+                  <>
+                    <div className="absolute -top-10 -right-10 w-52 h-52 bg-amber-400/35 rounded-full blur-3xl pointer-events-none animate-pulse" />
+                    <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-emerald-400/30 rounded-full blur-2xl pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/15 via-transparent to-amber-300/20 pointer-events-none" />
+                  </>
+                )}
+
+                {/* Dark Lock Watermark for Locked In Vault Events */}
+                {!isUnlocked && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/90 to-black pointer-events-none" />
+                    <Lock className="absolute -right-3 -bottom-3 w-36 h-36 text-white/[0.04] pointer-events-none stroke-[1.4]" />
+                  </>
+                )}
+
+                {/* Background Picture with Visual State Filtering */}
                 {bgImage ? (
                   <div className="absolute inset-0 overflow-hidden">
                     <img
                       src={bgImage}
                       alt={item.label}
                       referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      className={`w-full h-full object-cover transition-all duration-700 ${
+                        isUnlocked
+                          ? 'opacity-95 brightness-125 contrast-110 saturate-125 group-hover:scale-105'
+                          : 'opacity-75 grayscale-[20%] contrast-110 brightness-90 group-hover:scale-105'
+                      }`}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         if (!target.src.includes('/api/image-proxy') && item.backgroundUrl) {
@@ -224,29 +250,44 @@ export const EventCountdownBanner: React.FC<EventCountdownBannerProps> = ({
                         }
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/60" />
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" 
+                    />
                   </div>
                 ) : (
-                  <div className={`absolute inset-0 bg-gradient-to-b ${item.themeGradient}`} />
+                  <div 
+                    className={`absolute inset-0 ${
+                      isUnlocked
+                        ? `bg-gradient-to-b ${item.themeGradient}`
+                        : 'bg-[#020202]'
+                    }`} 
+                  />
                 )}
 
                 {/* Relative Content */}
-                <div className="relative z-10 space-y-2">
+                <div className="relative z-10 space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-bold text-xs sm:text-sm text-white truncate drop-shadow-md">
+                    <span 
+                      className={`font-black text-xs sm:text-sm truncate ${
+                        isUnlocked 
+                          ? 'text-white drop-shadow-[0_2px_12px_rgba(251,191,36,0.9)]' 
+                          : 'text-neutral-400'
+                      }`}
+                    >
                       {item.label}
                     </span>
                     
-                    {/* Status Tag: Within 100-day window or locked */}
-                    {countdown.isUnlocked ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 whitespace-nowrap shadow-sm animate-pulse">
-                        <Unlock className="w-2.5 h-2.5" />
-                        Active Window
+                    {/* Status Tag: Glowing Radiant Active Window vs Dark Vault Locked */}
+                    {isUnlocked ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 text-neutral-950 whitespace-nowrap shadow-[0_0_20px_rgba(251,191,36,0.95)] border border-amber-100 ring-2 ring-amber-300/70 animate-pulse">
+                        <Sparkles className="w-3 h-3 text-neutral-950" />
+                        <Unlock className="w-2.5 h-2.5 text-neutral-950" />
+                        <span>ACTIVE WINDOW</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/60 text-neutral-400 border border-white/10 whitespace-nowrap backdrop-blur-sm">
-                        <Lock className="w-2.5 h-2.5" />
-                        Locked (&gt;100d)
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#080808] text-neutral-400 border border-[#1C1C1C] whitespace-nowrap shadow-sm">
+                        <Lock className="w-2.5 h-2.5 text-neutral-400" />
+                        <span>LOCKED (&gt;100d)</span>
                       </span>
                     )}
                   </div>
@@ -254,38 +295,64 @@ export const EventCountdownBanner: React.FC<EventCountdownBannerProps> = ({
                   {/* Days remaining count */}
                   <div className="flex items-baseline justify-between pt-0.5">
                     <div>
-                      <span className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono drop-shadow">
+                      <span 
+                        className={`text-3xl sm:text-4xl font-black font-mono tracking-tight ${
+                          isUnlocked 
+                            ? 'text-amber-100 drop-shadow-[0_0_25px_rgba(251,191,36,1)]' 
+                            : 'text-neutral-400'
+                        }`}
+                      >
                         {countdown.days}
                       </span>
-                      <span className="text-[11px] text-neutral-300 ml-1.5 font-semibold">
+                      <span 
+                        className={`text-[11px] ml-1.5 font-bold ${
+                          isUnlocked 
+                            ? 'text-amber-300 font-black drop-shadow-[0_0_10px_rgba(251,191,36,0.85)]' 
+                            : 'text-neutral-400'
+                        }`}
+                      >
                         days left
                       </span>
                     </div>
 
-                    <span className="text-[10px] text-amber-300 font-mono font-bold px-2 py-0.5 rounded-lg bg-black/50 border border-white/10">
+                    <span 
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
+                        isUnlocked
+                          ? 'text-amber-200 bg-black/60 border-amber-400/70 shadow-[0_0_15px_rgba(251,191,36,0.4)]'
+                          : 'text-neutral-400 bg-[#060606] border-[#161616]'
+                      }`}
+                    >
                       {formatDisplayDate(item.date)}
                     </span>
                   </div>
 
                   {/* Progress bar towards 100-day window / event */}
-                  <div className="pt-1.5">
-                    <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/10">
+                  <div className="pt-1">
+                    <div 
+                      className={`w-full h-1.5 rounded-full overflow-hidden border ${
+                        isUnlocked
+                          ? 'bg-black/70 border-amber-400/50 shadow-inner'
+                          : 'bg-[#080808] border border-[#141414]'
+                      }`}
+                    >
                       <div
                         className={`h-full transition-all duration-500 ${
-                          countdown.isUnlocked ? 'bg-gradient-to-r from-amber-400 to-emerald-400' : 'bg-neutral-500'
+                          isUnlocked 
+                            ? 'bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-400 shadow-[0_0_20px_rgba(251,191,36,1)]' 
+                            : 'bg-neutral-800'
                         }`}
                         style={{
                           width: `${Math.min(100, Math.max(5, ((365 - countdown.days) / 365) * 100))}%`,
                         }}
                       />
                     </div>
-                    <div className="flex justify-between items-center text-[10px] text-neutral-300 mt-1">
-                      <span className="truncate">
-                        {countdown.isUnlocked 
-                          ? '100-day preparation active' 
-                          : `Unlocks in ${countdown.daysUntilUnlock}d`}
+                    <div className="flex justify-between items-center text-[10px] mt-1.5 font-medium">
+                      <span className={isUnlocked ? 'text-emerald-300 font-black drop-shadow-[0_0_10px_rgba(52,211,153,0.9)]' : 'text-neutral-400'}>
+                        {isUnlocked 
+                          ? '✨ 100-day preparation active' 
+                          : `🔒 Unlocks in ${countdown.daysUntilUnlock}d`}
                       </span>
-                      <span className="font-mono text-neutral-400 shrink-0 ml-1">
+                      <span className={`font-mono shrink-0 ml-1 ${isUnlocked ? 'text-amber-200 font-bold drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'text-neutral-400'}`}>
                         {countdown.hours}h {countdown.minutes}m
                       </span>
                     </div>

@@ -138,13 +138,14 @@ export const PracticeScheduler: React.FC<PracticeSchedulerProps> = ({
       });
     } else {
       setEditingPracticeId(null);
+      const last = practices.length > 0 ? practices[0] : null;
       setPracticeForm({
         date: new Date().toISOString().split('T')[0],
-        startTime: '17:00',
-        endTime: '19:00',
-        venue: 'Church Choir Loft',
-        focus: `Practice for ${eventTitle}`,
-        notes: 'Bring choir hymnal sheets, score folders, and pencils.',
+        startTime: last?.startTime || '17:00',
+        endTime: last?.endTime || '19:00',
+        venue: last?.venue || 'Church Choir Loft',
+        focus: last?.focus || `Practice for ${eventTitle}`,
+        notes: last?.notes || 'Bring choir hymnal sheets, score folders, and pencils.',
       });
     }
     setIsScheduleModalOpen(true);

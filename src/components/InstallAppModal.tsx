@@ -645,5 +645,21 @@ const InstallAppModalContent: React.FC<{ onClose: () => void }> = ({ onClose }) 
 
 export const InstallAppModal: React.FC<InstallAppModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
+  // Strictly restricted exclusively to Joshua's login
+  let isLeadJoshua = false;
+  try {
+    const stored = sessionStorage.getItem('st_cecilia_auth_member');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (
+        parsed?.name?.toLowerCase().includes('joshua') ||
+        parsed?.id === 'choir-joshua-peiris' ||
+        parsed?.email?.toLowerCase().includes('jshpeiris')
+      ) {
+        isLeadJoshua = true;
+      }
+    }
+  } catch {}
+  if (!isLeadJoshua) return null;
   return <InstallAppModalContent onClose={onClose} />;
 };

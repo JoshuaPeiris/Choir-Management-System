@@ -487,8 +487,6 @@ export const BirthdayFlyerModal: React.FC<BirthdayFlyerModalProps> = ({
       userImgRef.current = uImg;
       isUserImgReadyRef.current = true;
       drawFlyer();
-      // Auto align face on load
-      autoAlignFace(uImg.src);
     };
 
     uImg.onerror = () => {
@@ -1186,19 +1184,6 @@ export const BirthdayFlyerModal: React.FC<BirthdayFlyerModalProps> = ({
                     <Move className="w-3.5 h-3.5 text-amber-400" />
                     <span>Photo Position &amp; Alignment</span>
                   </h5>
-
-                  <button
-                    onClick={() => {
-                      if (userImgRef.current) {
-                        autoAlignFace(userImgRef.current.src);
-                      }
-                    }}
-                    className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
-                    title="Auto-detect face and center inside the circular frame"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    <span>Center Face (AI)</span>
-                  </button>
                 </div>
 
                 {/* Directional Nudge Pad */}

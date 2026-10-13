@@ -257,7 +257,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   if (!isOpen) return null;
 
   const isOrganist = member.role === ('Organist' as any) || choristerProfile?.role === 'Organist' || member.name.toLowerCase().includes('dinoli');
-  const isPresident = member.role === 'President' || member.name === 'Joshua Peiris';
+  const isLeadJoshua = Boolean(
+    (member?.name && member.name.toLowerCase().includes('joshua')) ||
+    member?.id === 'choir-joshua-peiris' ||
+    (member as any)?.email?.toLowerCase().includes('jshpeiris')
+  );
   const voiceRating = choristerProfile?.voiceRating || (isOrganist && member.name.toLowerCase().includes('dinoli') ? 9 : undefined);
   const voiceNotes = choristerProfile?.voiceNotes || (isOrganist ? 'Parish Organist & Vocal Accompanist' : undefined);
   const ratingDetails = getVoiceRatingDetails(voiceRating);
@@ -359,6 +363,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             },
           }),
         });
+      }
+
+      // Explicit dedicated PIN sync with Supabase PostgreSQL if PIN was changed
+      if (pin.trim() && pin.trim() !== (member.pin || '')) {
+        try {
+          await fetch('/api/auth/change-pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              memberId: member.id,
+              newPin: pin.trim(),
+            }),
+          });
+        } catch {
+          // Profile PUT already synced PIN as primary mechanism
+        }
       }
 
       setIsSaving(false);
@@ -797,134 +817,136 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           ) : (
             /* ======================= VIEW MODE ======================= */
             <>
-              {/* ONE POWERFUL BUTTON: INSTALL TO PHONE & ALLOW ALL PERMISSIONS AT ONCE */}
-              <div className="bg-gradient-to-br from-[#1C1810] via-[#141414] to-[#101713] p-5 rounded-2xl border-2 border-amber-500/50 shadow-xl shadow-amber-500/10 space-y-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-52 h-52 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-                
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
-                      <Zap className="w-6 h-6 animate-pulse" />
+              {/* ONE POWERFUL BUTTON: INSTALL TO PHONE & ALLOW ALL PERMISSIONS AT ONCE (Joshua Peiris Login Only) */}
+              {isLeadJoshua && (
+                <div className="bg-gradient-to-br from-[#1C1810] via-[#141414] to-[#101713] p-5 rounded-2xl border-2 border-amber-500/50 shadow-xl shadow-amber-500/10 space-y-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-52 h-52 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
+                        <Zap className="w-6 h-6 animate-pulse" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2">
+                          <span>Install on Phone &amp; Allow All Permissions</span>
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-black shadow-sm">
+                            1-Tap Master
+                          </span>
+                        </h4>
+                        <p className="text-xs text-neutral-400 mt-0.5">
+                          Installs the choir portal onto your mobile home screen and enables mass alerts, choir chimes &amp; offline access simultaneously.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2">
-                        <span>Install on Phone &amp; Allow All Permissions</span>
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-black shadow-sm">
-                          1-Tap Master
+                  </div>
+
+                  {/* Permissions & Live Status Badges */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 relative z-10">
+                    <div className="bg-[#0D0D0D] p-2.5 rounded-xl border border-[#242424] flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-amber-400 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-[9px] text-neutral-400 block font-semibold uppercase">Mobile App</span>
+                        <span className={`text-[11px] font-bold truncate block ${isInstalled || isStandalone ? 'text-emerald-400' : 'text-neutral-300'}`}>
+                          {isInstalled || isStandalone ? 'Installed' : canPromptDirectly ? 'Ready to Install' : isIOS ? 'iOS Ready' : 'Install Ready'}
                         </span>
-                      </h4>
-                      <p className="text-xs text-neutral-400 mt-0.5">
-                        Installs the choir portal onto your mobile home screen and enables mass alerts, choir chimes &amp; offline access simultaneously.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Permissions & Live Status Badges */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 relative z-10">
-                  <div className="bg-[#0D0D0D] p-2.5 rounded-xl border border-[#242424] flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-amber-400 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="text-[9px] text-neutral-400 block font-semibold uppercase">Mobile App</span>
-                      <span className={`text-[11px] font-bold truncate block ${isInstalled || isStandalone ? 'text-emerald-400' : 'text-neutral-300'}`}>
-                        {isInstalled || isStandalone ? 'Installed' : canPromptDirectly ? 'Ready to Install' : isIOS ? 'iOS Ready' : 'Install Ready'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#0D0D0D] p-2.5 rounded-xl border border-[#242424] flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="text-[9px] text-neutral-400 block font-semibold uppercase">Mass Alerts</span>
-                      <span className={`text-[11px] font-bold truncate block ${notifPermission === 'granted' ? 'text-emerald-400' : 'text-amber-300'}`}>
-                        {notifPermission === 'granted' ? 'Active' : 'Allow on Tap'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#0D0D0D] p-2.5 rounded-xl border border-[#242424] flex items-center gap-2">
-                    <Volume2 className="w-4 h-4 text-purple-400 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="text-[9px] text-neutral-400 block font-semibold uppercase">Choir Chimes</span>
-                      <span className={`text-[11px] font-bold truncate block ${audioUnlocked ? 'text-emerald-400' : 'text-neutral-300'}`}>
-                        {audioUnlocked ? 'Activated' : 'Auto-Unlock'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#0D0D0D] p-2.5 rounded-xl border border-[#242424] flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="text-[9px] text-neutral-400 block font-semibold uppercase">Offline Storage</span>
-                      <span className="text-[11px] font-bold text-sky-300 truncate block">
-                        Secured
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* THE ONE POWERFUL BUTTON */}
-                <div className="relative z-10 pt-1">
-                  <button
-                    type="button"
-                    id="one-powerful-install-permissions-btn"
-                    disabled={isPowerProcessing}
-                    onClick={handleMasterInstallAndAllPermissions}
-                    className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-[0.99] text-black font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl shadow-amber-500/25 transition-all cursor-pointer border border-amber-300/40 group"
-                  >
-                    {isPowerProcessing ? (
-                      <>
-                        <RotateCcw className="w-5 h-5 animate-spin" />
-                        <span>Activating Permissions &amp; Launching Installer...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-5 h-5 text-black group-hover:scale-125 transition-transform" />
-                        <span>Install App &amp; Allow All Permissions at Once</span>
-                        <ArrowRight className="w-5 h-5 text-black group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Direct Home Screen Installation Guide & Logo Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsInstallModalOpen(true)}
-                    className="w-full mt-2 py-2 px-3 rounded-xl bg-[#181818] hover:bg-[#222222] text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
-                  >
-                    <Smartphone className="w-4 h-4 text-amber-400" />
-                    <span>View Step-by-Step Home Screen Guide &amp; App Logo (Any Phone)</span>
-                  </button>
-                </div>
-
-                {/* Feedback Message */}
-                {powerFeedback && (
-                  <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-300 animate-in fade-in duration-200 relative z-10">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span className="leading-snug">{powerFeedback}</span>
-                  </div>
-                )}
-
-                {/* iOS 2-step instruction helper if opened on iPhone/iPad */}
-                {showIOSGuide && (
-                  <div className="p-3.5 rounded-xl bg-[#111111] border border-amber-500/30 space-y-2 text-xs text-neutral-300 animate-in fade-in duration-200 relative z-10">
-                    <div className="font-bold text-amber-400 flex items-center gap-1.5">
-                      <Share className="w-4 h-4" />
-                      <span>2 Quick Steps to Finish on iPhone / Safari:</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                      <div className="bg-[#181818] p-2 rounded-lg border border-[#2B2B2B] flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-amber-500 text-black font-black text-[10px] flex items-center justify-center shrink-0">1</span>
-                        <span>Tap Safari bottom <strong>Share</strong> icon (⎋)</span>
                       </div>
-                      <div className="bg-[#181818] p-2 rounded-lg border border-[#2B2B2B] flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-amber-500 text-black font-black text-[10px] flex items-center justify-center shrink-0">2</span>
-                        <span>Choose <strong>Add to Home Screen</strong> (+)</span>
+                    </div>
+
+                    <div className="bg-[#0D0D0D] p-2.5 rounded-xl border border-[#242424] flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-[9px] text-neutral-400 block font-semibold uppercase">Mass Alerts</span>
+                        <span className={`text-[11px] font-bold truncate block ${notifPermission === 'granted' ? 'text-emerald-400' : 'text-amber-300'}`}>
+                          {notifPermission === 'granted' ? 'Active' : 'Allow on Tap'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#0D0D0D] p-2.5 rounded-xl border border-[#242424] flex items-center gap-2">
+                      <Volume2 className="w-4 h-4 text-purple-400 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-[9px] text-neutral-400 block font-semibold uppercase">Choir Chimes</span>
+                        <span className={`text-[11px] font-bold truncate block ${audioUnlocked ? 'text-emerald-400' : 'text-neutral-300'}`}>
+                          {audioUnlocked ? 'Activated' : 'Auto-Unlock'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#0D0D0D] p-2.5 rounded-xl border border-[#242424] flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-[9px] text-neutral-400 block font-semibold uppercase">Offline Storage</span>
+                        <span className="text-[11px] font-bold text-sky-300 truncate block">
+                          Secured
+                        </span>
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
+
+                  {/* THE ONE POWERFUL BUTTON */}
+                  <div className="relative z-10 pt-1">
+                    <button
+                      type="button"
+                      id="one-powerful-install-permissions-btn"
+                      disabled={isPowerProcessing}
+                      onClick={handleMasterInstallAndAllPermissions}
+                      className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-[0.99] text-black font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl shadow-amber-500/25 transition-all cursor-pointer border border-amber-300/40 group"
+                    >
+                      {isPowerProcessing ? (
+                        <>
+                          <RotateCcw className="w-5 h-5 animate-spin" />
+                          <span>Activating Permissions &amp; Launching Installer...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-5 h-5 text-black group-hover:scale-125 transition-transform" />
+                          <span>Install App &amp; Allow All Permissions at Once</span>
+                          <ArrowRight className="w-5 h-5 text-black group-hover:translate-x-1 transition-transform" />
+                        </>
+                      )}
+                    </button>
+
+                    {/* Direct Home Screen Installation Guide & Logo Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsInstallModalOpen(true)}
+                      className="w-full mt-2 py-2 px-3 rounded-xl bg-[#181818] hover:bg-[#222222] text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+                    >
+                      <Smartphone className="w-4 h-4 text-amber-400" />
+                      <span>View Step-by-Step Home Screen Guide &amp; App Logo (Any Phone)</span>
+                    </button>
+                  </div>
+
+                  {/* Feedback Message */}
+                  {powerFeedback && (
+                    <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-300 animate-in fade-in duration-200 relative z-10">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span className="leading-snug">{powerFeedback}</span>
+                    </div>
+                  )}
+
+                  {/* iOS 2-step instruction helper if opened on iPhone/iPad */}
+                  {showIOSGuide && (
+                    <div className="p-3.5 rounded-xl bg-[#111111] border border-amber-500/30 space-y-2 text-xs text-neutral-300 animate-in fade-in duration-200 relative z-10">
+                      <div className="font-bold text-amber-400 flex items-center gap-1.5">
+                        <Share className="w-4 h-4" />
+                        <span>2 Quick Steps to Finish on iPhone / Safari:</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                        <div className="bg-[#181818] p-2 rounded-lg border border-[#2B2B2B] flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-amber-500 text-black font-black text-[10px] flex items-center justify-center shrink-0">1</span>
+                          <span>Tap Safari bottom <strong>Share</strong> icon (⎋)</span>
+                        </div>
+                        <div className="bg-[#181818] p-2 rounded-lg border border-[#2B2B2B] flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-amber-500 text-black font-black text-[10px] flex items-center justify-center shrink-0">2</span>
+                          <span>Choose <strong>Add to Home Screen</strong> (+)</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Official Contact Details Card */}
               <div className="bg-[#181818] p-4.5 rounded-2xl border border-[#262626] space-y-3">
@@ -1030,8 +1052,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </div>
               )}
 
-              {/* PRESIDENT LOGO & ALIGNMENT CONFIGURATION CARD */}
-              {(isPresident || member.name === 'Joshua Peiris') && (
+              {/* PRESIDENT LOGO & ALIGNMENT CONFIGURATION CARD (Lead Joshua Only) */}
+              {isLeadJoshua && (
                 <div className="bg-gradient-to-br from-amber-950/40 via-[#181818] to-[#141414] p-5 rounded-2xl border border-amber-500/40 space-y-4 shadow-xl">
                   <div className="flex items-center justify-between border-b border-amber-500/20 pb-2.5">
                     <div className="flex items-center gap-2">
@@ -1326,11 +1348,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         </div>
       </div>
 
-      {/* Universal Home Screen Installation Modal for any OS */}
-      <InstallAppModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-      />
+      {/* Universal Home Screen Installation Modal for any OS (Lead Joshua Only) */}
+      {isLeadJoshua && (
+        <InstallAppModal
+          isOpen={isInstallModalOpen}
+          onClose={() => setIsInstallModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -174,6 +174,13 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
   const [editingChorister, setEditingChorister] = useState<Chorister | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const isLeadJoshua = Boolean(
+    activeMember?.name?.trim().toLowerCase() === 'joshua peiris' ||
+    activeMember?.name?.trim().toLowerCase() === 'joshua' ||
+    activeMember?.id === 'choir-joshua-peiris' ||
+    (activeMember as any)?.email === 'jshpeiris@gmail.com'
+  );
+
   // Available starting letters from active choristers
   const availableLetters = useMemo(() => {
     const letters = new Set<string>();
@@ -467,14 +474,16 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
             </button>
           )}
 
-          <button
-            id="add-chorister-btn"
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-neutral-950 bg-amber-500 hover:bg-amber-400 shadow-md transition-all shadow-amber-500/20"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Register Member</span>
-          </button>
+          {isLeadJoshua && (
+            <button
+              id="add-chorister-btn"
+              onClick={handleOpenAdd}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-neutral-950 bg-amber-500 hover:bg-amber-400 shadow-md transition-all shadow-amber-500/20"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Register Member</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -891,30 +900,36 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
                     </div>
                   </div>
 
-                  {/* Quick Voice Rating Pill Trigger */}
-                  <button
-                    onClick={() => {
-                      if (quickRatingChoristerId === chorister.id) {
-                        setQuickRatingChoristerId(null);
-                      } else {
-                        setQuickRatingChoristerId(chorister.id);
-                        setQuickNotesText(chorister.voiceNotes || '');
-                      }
-                    }}
-                    className={`px-2 py-1 rounded-lg text-[11px] font-bold border shrink-0 flex items-center gap-1 transition-all ${
-                      chorister.voiceRating
-                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                        : 'bg-[#1C1C1C] text-neutral-400 border-[#2A2A2A]'
-                    }`}
-                    title="Tap to evaluate voice rating"
-                  >
-                    <Star className={`w-3 h-3 ${chorister.voiceRating ? 'text-amber-400 fill-amber-400' : 'text-neutral-500'}`} />
-                    <span>{chorister.voiceRating ? `${chorister.voiceRating}/10` : 'Rate'}</span>
-                  </button>
+                  {/* Quick Voice Rating Pill Trigger (Only for Choristers & Organists, not Instrument Players) */}
+                  {chorister.role !== 'Instrument Player' ? (
+                    <button
+                      onClick={() => {
+                        if (quickRatingChoristerId === chorister.id) {
+                          setQuickRatingChoristerId(null);
+                        } else {
+                          setQuickRatingChoristerId(chorister.id);
+                          setQuickNotesText(chorister.voiceNotes || '');
+                        }
+                      }}
+                      className={`px-2 py-1 rounded-lg text-[11px] font-bold border shrink-0 flex items-center gap-1 transition-all ${
+                        chorister.voiceRating
+                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                          : 'bg-[#1C1C1C] text-neutral-400 border-[#2A2A2A]'
+                      }`}
+                      title="Tap to evaluate voice rating"
+                    >
+                      <Star className={`w-3 h-3 ${chorister.voiceRating ? 'text-amber-400 fill-amber-400' : 'text-neutral-500'}`} />
+                      <span>{chorister.voiceRating ? `${chorister.voiceRating}/10` : 'Rate'}</span>
+                    </button>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/30 shrink-0">
+                      Instrumentalist
+                    </span>
+                  )}
                 </div>
 
-                {/* Inline Quick Voice Rating Grid if open on mobile */}
-                {isQuickRatingOpen && (
+                {/* Inline Quick Voice Rating Grid if open on mobile (Only for Choristers & Organists) */}
+                {isQuickRatingOpen && chorister.role !== 'Instrument Player' && (
                   <div className="mt-2.5 p-2.5 bg-[#181818] border border-[#2F2F2F] rounded-xl animate-in fade-in duration-100">
                     <p className="text-[10px] uppercase font-bold text-amber-400 mb-1.5">
                       Set Voice Rating (1–10)
@@ -1026,15 +1041,17 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
                       </button>
                     )}
 
-                    <button
-                      onClick={() => handleOpenEdit(chorister)}
-                      className="p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#282828] text-neutral-300 hover:text-white border border-[#2E2E2E] min-h-[36px] min-w-[36px] flex items-center justify-center"
-                      title="Edit Member"
-                    >
-                      <Edit className="w-3.5 h-3.5 text-amber-400" />
-                    </button>
+                    {isLeadJoshua && (
+                      <button
+                        onClick={() => handleOpenEdit(chorister)}
+                        className="p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#282828] text-neutral-300 hover:text-white border border-[#2E2E2E] min-h-[36px] min-w-[36px] flex items-center justify-center"
+                        title="Edit Member"
+                      >
+                        <Edit className="w-3.5 h-3.5 text-amber-400" />
+                      </button>
+                    )}
 
-                    {deletingId === chorister.id ? (
+                    {isLeadJoshua && (deletingId === chorister.id ? (
                       <div className="flex items-center gap-1 bg-rose-950/60 p-1 rounded-lg border border-rose-500/40">
                         <button
                           onClick={() => confirmDelete(chorister.id)}
@@ -1057,7 +1074,7 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    )}
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1266,7 +1283,9 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
 
                       {/* Voice Rating (1-10) with On-The-Spot Interactive Rating */}
                       <td className="py-3.5 px-4 relative">
-                        <div className="flex items-center gap-2">
+                        {chorister.role !== 'Instrument Player' ? (
+                          <>
+                          <div className="flex items-center gap-2">
                           <button
                             id={`rate-voice-btn-${chorister.id}`}
                             onClick={() => {
@@ -1385,6 +1404,13 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
                                 Save Notes
                               </button>
                             </div>
+                          </div>
+                        )}
+                        </>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
+                            <Headphones className="w-3.5 h-3.5 text-purple-400" />
+                            <span className="text-[11px] font-medium text-neutral-400">Instrumentalist (No Voice Rating)</span>
                           </div>
                         )}
                       </td>
@@ -1535,16 +1561,18 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
                             </button>
                           )}
 
-                          <button
-                            id={`edit-chorister-${chorister.id}`}
-                            onClick={() => handleOpenEdit(chorister)}
-                            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-[#202020] transition-colors"
-                            title="Edit Member Details"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
+                          {isLeadJoshua && (
+                            <button
+                              id={`edit-chorister-${chorister.id}`}
+                              onClick={() => handleOpenEdit(chorister)}
+                              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-[#202020] transition-colors"
+                              title="Edit Member Details"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           
-                          {deletingId === chorister.id ? (
+                          {isLeadJoshua && (deletingId === chorister.id ? (
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => confirmDelete(chorister.id)}
@@ -1568,7 +1596,7 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          )}
+                          ))}
                         </div>
                       </td>
                     </tr>
@@ -1779,65 +1807,67 @@ export const ChoristersDatabase: React.FC<ChoristersDatabaseProps> = ({
                 </div>
               </div>
 
-              {/* Voice Rating (1-10) Evaluation Section */}
-              <div className="bg-[#181818] p-3.5 rounded-xl border border-[#282828] space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    <span>Voice Rating (1 to 10)</span>
-                  </label>
-                  {formData.voiceRating && (
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, voiceRating: undefined })}
-                      className="text-[11px] text-neutral-400 hover:text-rose-400"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-10 gap-1">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
-                    const isSelected = formData.voiceRating === score;
-                    return (
+              {/* Voice Rating (1-10) Evaluation Section (Only for Choristers & Organists, not Instrument Players) */}
+              {formData.role !== 'Instrument Player' && (
+                <div className="bg-[#181818] p-3.5 rounded-xl border border-[#282828] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      <span>Voice Rating (1 to 10)</span>
+                    </label>
+                    {formData.voiceRating && (
                       <button
                         type="button"
-                        key={score}
-                        onClick={() => setFormData({ ...formData, voiceRating: score })}
-                        className={`py-1.5 rounded-lg text-xs font-black transition-all border ${
-                          isSelected
-                            ? 'bg-amber-500 text-neutral-950 border-amber-400 ring-2 ring-amber-500/40 shadow'
-                            : 'bg-[#202020] text-neutral-300 border-[#303030] hover:bg-[#2A2A2A]'
-                        }`}
+                        onClick={() => setFormData({ ...formData, voiceRating: undefined })}
+                        className="text-[11px] text-neutral-400 hover:text-rose-400"
                       >
-                        {score}
+                        Clear
                       </button>
-                    );
-                  })}
-                </div>
-
-                {formData.voiceRating ? (
-                  <div className="text-[11px] text-amber-300/90 font-medium">
-                    {getVoiceRatingDetails(formData.voiceRating).label} • {getVoiceRatingDetails(formData.voiceRating).desc}
+                    )}
                   </div>
-                ) : (
-                  <div className="text-[11px] text-neutral-500">
-                    Optional: Rate voice quality from 1 to 10 anytime when observing rehearsals or auditions.
-                  </div>
-                )}
 
-                {/* Voice Notes */}
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Vocal range / notes (e.g. Mezzo-Soprano, Clear Cantor, Tenor soloist)"
-                    value={formData.voiceNotes}
-                    onChange={(e) => setFormData({ ...formData, voiceNotes: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs bg-[#121212] border border-[#2E2E2E] rounded-lg text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-500"
-                  />
+                  <div className="grid grid-cols-10 gap-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
+                      const isSelected = formData.voiceRating === score;
+                      return (
+                        <button
+                          type="button"
+                          key={score}
+                          onClick={() => setFormData({ ...formData, voiceRating: score })}
+                          className={`py-1.5 rounded-lg text-xs font-black transition-all border ${
+                            isSelected
+                              ? 'bg-amber-500 text-neutral-950 border-amber-400 ring-2 ring-amber-500/40 shadow'
+                              : 'bg-[#202020] text-neutral-300 border-[#303030] hover:bg-[#2A2A2A]'
+                          }`}
+                        >
+                          {score}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {formData.voiceRating ? (
+                    <div className="text-[11px] text-amber-300/90 font-medium">
+                      {getVoiceRatingDetails(formData.voiceRating).label} • {getVoiceRatingDetails(formData.voiceRating).desc}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-neutral-500">
+                      Optional: Rate voice quality from 1 to 10 anytime when observing rehearsals or auditions.
+                    </div>
+                  )}
+
+                  {/* Voice Notes */}
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Vocal range / notes (e.g. Mezzo-Soprano, Clear Cantor, Tenor soloist)"
+                      value={formData.voiceNotes}
+                      onChange={(e) => setFormData({ ...formData, voiceNotes: e.target.value })}
+                      className="w-full px-3 py-1.5 text-xs bg-[#121212] border border-[#2E2E2E] rounded-lg text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Age and Birthdate Grid (Birthdays will be added later) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -41,8 +41,9 @@ export const CalendarConfigModal: React.FC<CalendarConfigModalProps> = ({
   const [formData, setFormData] = useState<AnnualCalendarConfig>(() => ({
     feastDate: calendarConfig?.feastDate || '2026-09-29',
     carolsDate: calendarConfig?.carolsDate || '2026-12-20',
-    christmasNewYearDate: calendarConfig?.christmasNewYearDate || '2026-12-25',
+    christmasDate: calendarConfig?.christmasDate || calendarConfig?.christmasNewYearDate || '2026-12-25',
     newYearDate: calendarConfig?.newYearDate || '2027-01-01',
+    christmasNewYearDate: calendarConfig?.christmasNewYearDate || '2026-12-25',
     easterDate: calendarConfig?.easterDate || '2027-03-28',
     feastBackgroundUrl: calendarConfig?.feastBackgroundUrl || '',
     carolsBackgroundUrl: calendarConfig?.carolsBackgroundUrl || '',
@@ -59,8 +60,9 @@ export const CalendarConfigModal: React.FC<CalendarConfigModalProps> = ({
       setFormData({
         feastDate: calendarConfig.feastDate || '2026-09-29',
         carolsDate: calendarConfig.carolsDate || '2026-12-20',
-        christmasNewYearDate: calendarConfig.christmasNewYearDate || '2026-12-25',
+        christmasDate: calendarConfig.christmasDate || calendarConfig.christmasNewYearDate || '2026-12-25',
         newYearDate: calendarConfig.newYearDate || '2027-01-01',
+        christmasNewYearDate: calendarConfig.christmasNewYearDate || '2026-12-25',
         easterDate: calendarConfig.easterDate || '2027-03-28',
         feastBackgroundUrl: calendarConfig.feastBackgroundUrl || '',
         carolsBackgroundUrl: calendarConfig.carolsBackgroundUrl || '',
@@ -145,13 +147,14 @@ export const CalendarConfigModal: React.FC<CalendarConfigModalProps> = ({
                   1. Parish Feast Date (St. Michael&apos;s Feast)
                 </label>
                 {getDaysRemaining(formData.feastDate, currentDate) <= 100 ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-neutral-950 bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-400 border border-amber-100 px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.8)] animate-pulse">
+                    <Sparkles className="w-2.5 h-2.5" />
                     <Unlock className="w-2.5 h-2.5" />
-                    {getDaysRemaining(formData.feastDate, currentDate)} Days (Unlocked)
+                    {getDaysRemaining(formData.feastDate, currentDate)} Days (Activated)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#222222] border border-[#333333] px-2 py-0.5 rounded-full">
-                    <Lock className="w-2.5 h-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#080808] border border-[#1A1A1A] px-2.5 py-0.5 rounded-full">
+                    <Lock className="w-2.5 h-2.5 text-neutral-400" />
                     {getDaysRemaining(formData.feastDate, currentDate)} Days (Locked)
                   </span>
                 )}
@@ -197,13 +200,14 @@ export const CalendarConfigModal: React.FC<CalendarConfigModalProps> = ({
                   2. Festival of Carols Date
                 </label>
                 {getDaysRemaining(formData.carolsDate, currentDate) <= 100 ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-neutral-950 bg-gradient-to-r from-blue-400 via-sky-300 to-emerald-400 border border-blue-100 px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(59,130,246,0.8)] animate-pulse">
+                    <Sparkles className="w-2.5 h-2.5" />
                     <Unlock className="w-2.5 h-2.5" />
-                    {getDaysRemaining(formData.carolsDate, currentDate)} Days (Unlocked)
+                    {getDaysRemaining(formData.carolsDate, currentDate)} Days (Activated)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#222222] border border-[#333333] px-2 py-0.5 rounded-full">
-                    <Lock className="w-2.5 h-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#080808] border border-[#1A1A1A] px-2.5 py-0.5 rounded-full">
+                    <Lock className="w-2.5 h-2.5 text-neutral-400" />
                     {getDaysRemaining(formData.carolsDate, currentDate)} Days (Locked)
                   </span>
                 )}
@@ -249,13 +253,14 @@ export const CalendarConfigModal: React.FC<CalendarConfigModalProps> = ({
                   3. Christmas &amp; Nativity Midnight Mass Date
                 </label>
                 {getDaysRemaining(formData.christmasNewYearDate, currentDate) <= 100 ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-neutral-950 bg-gradient-to-r from-rose-400 via-pink-300 to-amber-300 border border-rose-100 px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(244,63,94,0.8)] animate-pulse">
+                    <Sparkles className="w-2.5 h-2.5" />
                     <Unlock className="w-2.5 h-2.5" />
-                    {getDaysRemaining(formData.christmasNewYearDate, currentDate)} Days (Unlocked)
+                    {getDaysRemaining(formData.christmasNewYearDate, currentDate)} Days (Activated)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#222222] border border-[#333333] px-2 py-0.5 rounded-full">
-                    <Lock className="w-2.5 h-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#080808] border border-[#1A1A1A] px-2.5 py-0.5 rounded-full">
+                    <Lock className="w-2.5 h-2.5 text-neutral-400" />
                     {getDaysRemaining(formData.christmasNewYearDate, currentDate)} Days (Locked)
                   </span>
                 )}
@@ -271,7 +276,7 @@ export const CalendarConfigModal: React.FC<CalendarConfigModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSimulatedDays('christmasNewYearDate', 90)}
-                  className="px-2.5 py-2 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 rounded-xl whitespace-nowrap transition-colors"
+                  className="px-2.5 py-2 text-[10px] font-bold text-rose-300 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 rounded-xl whitespace-nowrap transition-colors"
                   title="Set within 100-day window"
                 >
                   Unlock (90d)
@@ -301,13 +306,14 @@ export const CalendarConfigModal: React.FC<CalendarConfigModalProps> = ({
                   4. New Year Thanksgiving &amp; Midnight Mass Date
                 </label>
                 {getDaysRemaining(formData.newYearDate || '2027-01-01', currentDate) <= 100 ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-neutral-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 border border-emerald-100 px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.8)] animate-pulse">
+                    <Sparkles className="w-2.5 h-2.5" />
                     <Unlock className="w-2.5 h-2.5" />
-                    {getDaysRemaining(formData.newYearDate || '2027-01-01', currentDate)} Days (Unlocked)
+                    {getDaysRemaining(formData.newYearDate || '2027-01-01', currentDate)} Days (Activated)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#222222] border border-[#333333] px-2 py-0.5 rounded-full">
-                    <Lock className="w-2.5 h-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#080808] border border-[#1A1A1A] px-2.5 py-0.5 rounded-full">
+                    <Lock className="w-2.5 h-2.5 text-neutral-400" />
                     {getDaysRemaining(formData.newYearDate || '2027-01-01', currentDate)} Days (Locked)
                   </span>
                 )}
@@ -353,13 +359,14 @@ export const CalendarConfigModal: React.FC<CalendarConfigModalProps> = ({
                   5. Easter Triduum &amp; Solemnity Date
                 </label>
                 {getDaysRemaining(formData.easterDate, currentDate) <= 100 ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-neutral-950 bg-gradient-to-r from-purple-400 via-fuchsia-300 to-amber-300 border border-purple-100 px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(168,85,247,0.8)] animate-pulse">
+                    <Sparkles className="w-2.5 h-2.5" />
                     <Unlock className="w-2.5 h-2.5" />
-                    {getDaysRemaining(formData.easterDate, currentDate)} Days (Unlocked)
+                    {getDaysRemaining(formData.easterDate, currentDate)} Days (Activated)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#222222] border border-[#333333] px-2 py-0.5 rounded-full">
-                    <Lock className="w-2.5 h-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#080808] border border-[#1A1A1A] px-2.5 py-0.5 rounded-full">
+                    <Lock className="w-2.5 h-2.5 text-neutral-400" />
                     {getDaysRemaining(formData.easterDate, currentDate)} Days (Locked)
                   </span>
                 )}
